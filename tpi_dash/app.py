@@ -1,9 +1,6 @@
-"""
-app.py — Point d'entrée principal
-TPI · Analyse Financière (Dash + flask-login)
-"""
 
 import dash
+import os
 from dash import Dash, dcc, html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
 from flask import Flask, redirect, url_for, request, session
@@ -33,7 +30,8 @@ from pages.composite   import layout as layout_composite,   register_callbacks a
 # FLASK + LOGIN
 # ══════════════════════════════════════════════════════════════════════════════
 server = Flask(__name__)
-server.secret_key = 'tpi-secret-key-change-me'   # ← change en prod
+
+server.secret_key = os.environ.get('SECRET_KEY', 'clé_secondaire')   
 
 login_manager = LoginManager()
 login_manager.init_app(server)
@@ -374,3 +372,4 @@ def _login_page(error=None):
 # ══════════════════════════════════════════════════════════════════════════════
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
+
