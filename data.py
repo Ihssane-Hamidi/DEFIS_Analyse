@@ -17,9 +17,9 @@ import pandas as pd
 from functools import lru_cache
 
 # ── CHEMINS ───────────────────────────────────────────────────────────────────
+BASE_DIR           = os.path.dirname(os.path.abspath(__file__))
 LOCAL_DIR          = '/Users/hamidi/Desktop/'
-GITHUB_RELEASE_URL = "https://github.com/Ihssane-Hamidi/TPI_MQ/releases/download/v1.0/"
-
+GITHUB_RELEASE_URL = "https://github.com/Ihssane-Hamidi/DEFIS_Analyse/releases/download/v1.0/"
 FILES = {
     'mq_metriques': 'mq2_metriques.parquet',
     'mq_prix':      'mq2_prix_journaliers.parquet',
@@ -52,21 +52,32 @@ PLOTLY_LAYOUT = dict(
 
 # ── TÉLÉCHARGEMENT ────────────────────────────────────────────────────────────
 def get_parquet(key):
-    """Cherche le fichier localement, sinon le télécharge depuis GitHub."""
     filename = FILES[key]
-    local    = os.path.join(LOCAL_DIR, filename)
 
-    if os.path.exists(local):    return local
-    if os.path.exists(filename): return filename
+    # 1. Local Mac
+    local = os.path.join(LOCAL_DIR, filename)
+    if os.path.exists(local):
+        return local
 
+    # 2. Dossier data/ dans le projet
+    project_data = os.path.join(BASE_DIR, 'data', filename)
+    if os.path.exists(project_data):
+        return project_data
+
+    # 3. /tmp déjà téléchargé (cache Render)
+    tmp_path = os.path.join('/tmp', filename)
+    if os.path.exists(tmp_path):
+        return tmp_path
+
+    # 4. Téléchargement → /tmp
     url = GITHUB_RELEASE_URL + filename
     print(f"Téléchargement {filename}...")
-    r = requests.get(url, stream=True)
+    r = requests.get(url, stream=True, timeout=120)
     r.raise_for_status()
-    with open(filename, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=8192):
+    with open(tmp_path, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=65536):
             f.write(chunk)
-    return filename
+    return tmp_path
 
 # ── CHARGEMENT (mis en cache) ─────────────────────────────────────────────────
 @lru_cache(maxsize=None)
