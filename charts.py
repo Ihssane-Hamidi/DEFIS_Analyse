@@ -162,17 +162,19 @@ def plot_panel_quintiles(valid, prices, brent, rallies, quintile_col):
 # ── OLS ───────────────────────────────────────────────────────────────────────
 def plot_scatter_ols(df, dep_var, quintile_col, x_col='Score_std',
                      x_label='Score (standardisé)', y_label=None):
-    """Nuage de points Score vs variable dépendante, coloré par quintile."""
     if y_label is None:
         y_label = dep_var
 
+    df_plot = df.dropna(subset=[x_col, dep_var, quintile_col])
+    hover   = 'ticker' if 'ticker' in df_plot.columns else None
+
     fig = px.scatter(
-        df.dropna(subset=[x_col, dep_var, quintile_col]),
+        df_plot,
         x=x_col, y=dep_var,
         color=quintile_col,
         trendline='ols',
         color_discrete_map=QUINTILE_COLORS,
-        hover_name='ticker',
+        hover_name=hover,
         labels={x_col: x_label, dep_var: y_label},
     )
     fig.update_layout(**PLOTLY_LAYOUT, height=450)
