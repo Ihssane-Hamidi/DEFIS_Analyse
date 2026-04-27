@@ -6,6 +6,7 @@ Created on Mon Apr 27 00:41:37 2026
 @author: hamidi
 """
 
+
 """
 data.py — Chargement et constantes
 TPI · Analyse Financière (Dash)
