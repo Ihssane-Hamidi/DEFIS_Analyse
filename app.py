@@ -372,5 +372,44 @@ def _login_page(error=None):
 # ══════════════════════════════════════════════════════════════════════════════
 # LANCEMENT
 # ══════════════════════════════════════════════════════════════════════════════
+@server.route('/debug')
+def debug():
+    import traceback
+    lines = []
+
+    # 1. Test chargement données
+    lines.append(f"valid_mq : {len(valid_mq)} lignes")
+    lines.append(f"valid_act : {len(valid_act)} lignes")
+    lines.append(f"Colonnes MQ : {list(valid_mq.columns)}")
+    lines.append(f"Colonnes ACT : {list(valid_act.columns)}")
+
+    # 2. Test OLS MQ
+    from utils import prepare_ols_data, run_ols, winsorize
+    try:
+        dep = 'Rendement_2025'
+        df_test = valid_mq[['Score_global_MQ', 'Macro_Secteur', dep,
+                              'LogMarketCap', 'BookToMarket', 'Quintile_MQ']].dropna()
+        lines.append(f"OLS MQ df_test : {len(df_test)} lignes après dropna")
+        df_p = prepare_ols_data(df_test, 'Score_global_MQ', 'Macro_Secteur')
+        m = run_ols(df_p, dep, 'Macro_Secteur', 'simple')
+        lines.append(f"OLS MQ résultat : {m}")
+    except Exception as e:
+        lines.append(f"OLS MQ ERREUR : {traceback.format_exc()}")
+
+    # 3. Test OLS ACT
+    try:
+        dep = 'Rendement_2025'
+        df_test = valid_act[[col_score_act, col_secteur_act, dep,
+                              'LogMarketCap', 'BookToMarket']].dropna()
+        lines.append(f"OLS ACT df_test : {len(df_test)} lignes après dropna")
+    except Exception as e:
+        lines.append(f"OLS ACT ERREUR : {traceback.format_exc()}")
+
+    # 4. Valeurs Rendement_2025
+    lines.append(f"Rendement_2025 MQ sample : {valid_mq['Rendement_2025'].dropna().head().tolist()}")
+
+    return '<br>'.join(lines)
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
