@@ -20,7 +20,7 @@ from functools import lru_cache
 
 # ── CHEMINS ───────────────────────────────────────────────────────────────────
 BASE_DIR           = os.path.dirname(os.path.abspath(__file__))
-LOCAL_DIR          = '/Users/hamidi/Desktop/'
+LOCAL_DIR          = '/Users/hamidi/Desktop/tpi_dash'
 GITHUB_RELEASE_URL = "https://github.com/Ihssane-Hamidi/DEFIS_Analyse/releases/download/v1.0/"
 FILES = {
     'mq_metriques': 'mq2_metriques.parquet',
