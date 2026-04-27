@@ -37,7 +37,7 @@ login_manager = LoginManager()
 login_manager.init_app(server)
 login_manager.login_view = '/login'
 
-# Utilisateurs en dur (remplace par une BDD en prod)
+# pour la démo meuf::: attention à changer après
 USERS = {
     'admin':  {'password': 'admin123',  'role': 'Admin',   'display': 'Administrateur'},
     'analyst':{'password': 'analyst123','role': 'Analyst', 'display': 'I. Hamidi'},
