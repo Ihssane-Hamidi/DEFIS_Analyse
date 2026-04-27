@@ -17,6 +17,7 @@ import requests
 import pandas as pd
 from functools import lru_cache
 
+
 # ── CHEMINS ───────────────────────────────────────────────────────────────────
 BASE_DIR           = os.path.dirname(os.path.abspath(__file__))
 LOCAL_DIR          = '/Users/hamidi/Desktop/'
