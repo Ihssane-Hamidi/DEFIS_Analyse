@@ -1,0 +1,10 @@
+dash
+pandas
+pyarrow
+gunicorn
+statsmodels
+scipy
+Flask
+numpy
+plotly
+requests
