@@ -27,7 +27,7 @@ def plot_rendements_societe(prices_col, ticker, brent, rallies, company_name):
     Graphique rendements journaliers (barres) + Brent base 100 (axe secondaire).
     prices_col : pd.Series des prix de la société
     """
-    ret_daily  = prices_col.pct_change().dropna()
+    ret_daily = prices_col.dropna()
     brent_al   = brent.reindex(ret_daily.index, method='ffill').dropna()
     brent_norm = brent_al / brent_al.iloc[0] * 100
 
@@ -129,7 +129,7 @@ def plot_panel_quintiles(valid, prices, brent, rallies, quintile_col):
         tickers_q = [t for t in tickers_q if t in prices.columns]
         if not tickers_q:
             continue
-        cum = (1 + prices[tickers_q].pct_change()).cumprod() - 1
+        cum = prices[tickers_q].dropna(how='all')
         cum_r = cum.mean(axis=1).dropna()
         fig.add_trace(go.Scatter(
             x=cum_r.index, y=cum_r.values,
@@ -232,7 +232,7 @@ def plot_cumulatif_categories(valid, prices, brent, rallies,
         tickers_cat = [t for t in tickers_cat if t in prices.columns]
         if not tickers_cat:
             continue
-        cum = (1 + prices[tickers_cat].pct_change()).cumprod() - 1
+        cum = prices[tickers_cat].dropna(how='all')
         cum_r = cum.mean(axis=1).dropna()
         fig.add_trace(go.Scatter(
             x=cum_r.index, y=cum_r.values,
