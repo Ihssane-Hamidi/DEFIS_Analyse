@@ -55,31 +55,21 @@ PLOTLY_LAYOUT = dict(
 # ── TÉLÉCHARGEMENT ────────────────────────────────────────────────────────────
 def get_parquet(key):
     filename = FILES[key]
-
+    
     # 1. Local Mac
     local = os.path.join(LOCAL_DIR, filename)
     if os.path.exists(local):
         return local
-
-    # 2. Dossier data/ dans le projet
+    
+    # 2. Dossier data/ dans le repo (Render)
     project_data = os.path.join(BASE_DIR, 'data', filename)
     if os.path.exists(project_data):
         return project_data
-
-    # 3. /tmp déjà téléchargé (cache Render)
-    tmp_path = os.path.join('/tmp', filename)
-    if os.path.exists(tmp_path):
-        return tmp_path
-
-    # 4. Téléchargement → /tmp
-    url = GITHUB_RELEASE_URL + filename
-    print(f"Téléchargement {filename}...")
-    r = requests.get(url, stream=True, timeout=120)
-    r.raise_for_status()
-    with open(tmp_path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=65536):
-            f.write(chunk)
-    return tmp_path
+    
+    raise FileNotFoundError(
+        f"{filename} introuvable. "
+        f"Vérifiez que le fichier est dans le dossier data/ du repo."
+    )
 
 # ── CHARGEMENT (mis en cache) ─────────────────────────────────────────────────
 @lru_cache(maxsize=None)
