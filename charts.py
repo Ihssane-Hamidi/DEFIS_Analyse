@@ -130,7 +130,7 @@ def plot_panel_quintiles(valid, prices, brent, rallies, quintile_col):
         if not tickers_q:
             continue
         
-        cum = prices[tickers_q].ffill().dropna(how='all')
+        cum = (1 + prices[tickers_q].ffill().pct_change()).cumprod() - 1
         cum_r = cum.mean(axis=1).dropna()
         
         fig.add_trace(go.Scatter(
@@ -234,7 +234,7 @@ def plot_cumulatif_categories(valid, prices, brent, rallies,
         tickers_cat = [t for t in tickers_cat if t in prices.columns]
         if not tickers_cat:
             continue 
-        cum = prices[tickers_cat].ffill().dropna(how='all')
+        cum = (1 + prices[tickers_cat].ffill().pct_change()).cumprod() - 1
         cum_r = cum.mean(axis=1).dropna()
         fig.add_trace(go.Scatter(
             x=cum_r.index, y=cum_r.values,
