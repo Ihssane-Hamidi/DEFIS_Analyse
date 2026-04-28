@@ -91,6 +91,7 @@ def register_callbacks(app, data: dict):
         Input('store-dataset',  'data'),
     )
     def update_brent(period, dep_choice, model_type, dataset):
+        print(f"=== BRENT CALLBACK === period={period} dep={dep_choice} dataset={dataset}")
         is_mq        = (dataset != 'act')
         valid        = data['valid_mq']    if is_mq else data['valid_act']
         prices       = data['prices_mq']   if is_mq else data['prices_act']
