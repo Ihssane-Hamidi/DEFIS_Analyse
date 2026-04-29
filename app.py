@@ -73,10 +73,10 @@ valid_mq   = prepare_valid_mq(df_mq)
 valid_act  = prepare_valid_act(df_act)
 
 # Colonnes dynamiques ACT
-col_score_act   = df_act.columns[5]
-col_secteur_act = df_act.columns[3]
-col_narr_act    = df_act.columns[6]
-col_trend_act   = df_act.columns[7]
+col_score_act   = 'Score global - Performance Score /100'
+col_secteur_act = 'Secteur'
+col_narr_act    = 'Score global - Narrative Score'
+col_trend_act   = 'Score global - Trend Score'
 
 print(f"MQ : {len(valid_mq)} entreprises · ACT : {len(valid_act)} entreprises · Rallies Brent : {len(rallies)}")
 
