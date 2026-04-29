@@ -114,7 +114,7 @@ def register_callbacks(app, data: dict):
         valid2['Rendement_Brent']  = valid2['ticker'].map(rdt_b)
         valid2['Volatilite_Brent'] = valid2['ticker'].map(vol_b)
         valid2 = prepare_ols_data(valid2, score_col, secteur_col)
-
+        valid2 = valid2.dropna(subset=[score_col, secteur_col])
         # ── Régressions ───────────────────────────────────────────────────────
         m_gen = run_ols(valid2, dep_gen,   secteur_col, model_type)
         m_br  = run_ols(valid2, dep_brent, secteur_col, model_type)
