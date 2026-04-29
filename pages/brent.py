@@ -123,7 +123,7 @@ def register_callbacks(app, data: dict):
         m_br  = run_ols(valid2, dep_brent, secteur_col, model_type)
 
         # ── Metric cards ──────────────────────────────────────────────────────
-        if m_gen and m_br:
+        if True:
             c_gen, p_gen = m_gen.params['Score_std'], m_gen.pvalues['Score_std']
             c_br,  p_br  = m_br.params['Score_std'],  m_br.pvalues['Score_std']
             delta = c_br - c_gen
