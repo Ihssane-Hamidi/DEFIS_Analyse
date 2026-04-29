@@ -76,7 +76,7 @@ def calc_metriques_brent(prices, tickers, rallies):
 
         for s, e in rallies:
             window = px.loc[s:e].dropna()
-            if len(window) < 5:
+            if len(window) < 2:
                 continue
             cumret *= (window.iloc[-1] / window.iloc[0])
             all_rets.extend(window.pct_change().dropna().tolist())
