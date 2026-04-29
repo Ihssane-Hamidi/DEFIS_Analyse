@@ -108,6 +108,7 @@ def register_callbacks(app, data: dict):
 
         # ── Calcul métriques Brent ────────────────────────────────────────────
         tickers = valid['ticker'].dropna().tolist()
+        tickers = [t.strip() for t in tickers] 
         rdt_b, vol_b = calc_metriques_brent(prices, tickers, rallies)
 
         valid2 = valid.copy()
