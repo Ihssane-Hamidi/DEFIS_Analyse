@@ -10,3 +10,4 @@ scipy
 numpy
 plotly
 requests
+patsy
