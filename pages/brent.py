@@ -116,6 +116,9 @@ def register_callbacks(app, data: dict):
         valid2 = prepare_ols_data(valid2, score_col, secteur_col)
         valid2 = valid2.dropna(subset=[score_col, secteur_col])
         # ── Régressions ───────────────────────────────────────────────────────
+        print(f"DEBUG - Tickers demandés : {tickers[:5]}")
+        print(f"DEBUG - Tickers trouvés dans rdt_b : {list(rdt_b.keys())[:5]}")
+        print(f"DEBUG - Lignes non-vides pour OLS : {valid2['Rendement_Brent'].notna().sum()}")
         m_gen = run_ols(valid2, dep_gen,   secteur_col, model_type)
         m_br  = run_ols(valid2, dep_brent, secteur_col, model_type)
 
