@@ -104,23 +104,39 @@ def load_act_prix():
 
 @lru_cache(maxsize=None)
 def load_brent():
-    local = os.path.join(LOCAL_DIR, 'brent.parquet')
-    url   = GITHUB_RELEASE_URL + 'brent.parquet'
-
+    filename = 'brent.parquet'
+    
+    # 1. Test Local Mac
+    local = os.path.join(LOCAL_DIR, filename)
     if os.path.exists(local):
         df = pd.read_parquet(local)
         return df['Close']
 
+    # 2. Test Dossier data/ (Render)
+    project_data = os.path.join(BASE_DIR, 'data', filename)
+    if os.path.exists(project_data):
+        df = pd.read_parquet(project_data)
+        return df['Close']
+
+    # 3. Test Racine (au cas où)
+    root_data = os.path.join(BASE_DIR, filename)
+    if os.path.exists(root_data):
+        df = pd.read_parquet(root_data)
+        return df['Close']
+
+    # 4. Fallback : Téléchargement (si les deux autres échouent)
     try:
-        r = requests.get(url, stream=True)
+        url = GITHUB_RELEASE_URL + filename
+        print(f"Téléchargement {filename} depuis GitHub...")
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
-        with open('brent.parquet', 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-        df = pd.read_parquet('brent.parquet')
+        tmp_path = os.path.join('/tmp', filename)
+        with open(tmp_path, 'wb') as f:
+            f.write(r.content)
+        df = pd.read_parquet(tmp_path)
         return df['Close']
     except Exception as e:
-        print(f"Brent introuvable : {e}")
+        print(f"ERREUR : Impossible de trouver ou télécharger {filename} : {e}")
         return pd.Series(dtype=float)
 
 # ── PRÉPARATION DES DATAFRAMES ────────────────────────────────────────────────
