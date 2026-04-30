@@ -29,7 +29,6 @@ def layout(ctx: dict):
                    'color': '#e6edf3', 'marginBottom': '16px'},
         ),
 
-        # ── Sélecteurs ───────────────────────────────────────────────────────
         html.Div(className='row-3', style={'marginBottom': '16px'}, children=[
             html.Div([
                 html.Div('Période modèle général', className='kpi-label'),
@@ -59,9 +58,9 @@ def layout(ctx: dict):
                 dcc.Dropdown(
                     id='brent-model',
                     options=[
-                        {'label': 'Simple (Score + Secteur)',           'value': 'simple'},
-                        {'label': 'Interaction (Score × Secteur)',      'value': 'interaction'},
-                        {'label': 'Fama-French (+ Taille + B/M)',       'value': 'fama_french'},
+                        {'label': 'Simple (Score + Secteur)',      'value': 'simple'},
+                        {'label': 'Interaction (Score × Secteur)', 'value': 'interaction'},
+                        {'label': 'Fama-French (+ Taille + B/M)', 'value': 'fama_french'},
                     ],
                     value='simple',
                     clearable=False,
@@ -70,7 +69,6 @@ def layout(ctx: dict):
             ]),
         ]),
 
-        # ── Résultats dynamiques ──────────────────────────────────────────────
         dcc.Loading(
             type='circle', color='#1f6feb',
             children=html.Div(id='brent-results'),
@@ -85,30 +83,37 @@ def register_callbacks(app, data: dict):
 
     @app.callback(
         Output('brent-results', 'children'),
-        Input('brent-period',   'value'),
-        Input('brent-dep',      'value'),
-        Input('brent-model',    'value'),
-        Input('store-dataset',  'data'),
+        Input('brent-period',  'value'),
+        Input('brent-dep',     'value'),
+        Input('brent-model',   'value'),
+        Input('store-dataset', 'data'),
     )
     def update_brent(period, dep_choice, model_type, dataset):
         print(f"=== BRENT CALLBACK === period={period} dep={dep_choice} dataset={dataset}")
+
         is_mq        = (dataset != 'act')
-        valid        = data['valid_mq']    if is_mq else data['valid_act']
-        prices       = data['prices_mq']   if is_mq else data['prices_act']
+        valid        = data['valid_mq']     if is_mq else data['valid_act']
+        prices       = data['prices_mq']    if is_mq else data['prices_act']
         rallies      = data['rallies']
-        score_col    = 'Score_global_MQ'   if is_mq else data['col_score_act']
-        secteur_col  = 'Macro_Secteur'     if is_mq else data['col_secteur_act']
-        quintile_col = 'Quintile_MQ'       if is_mq else 'Quintile_ACT'
-        score_label  = 'Score global MQ'   if is_mq else 'Performance Score ACT'
-        total_panel  = len(data['df_mq'])  if is_mq else len(data['df_act'])
+        score_col    = 'Score_global_MQ'    if is_mq else data['col_score_act']
+        secteur_col  = 'Macro_Secteur'      if is_mq else data['col_secteur_act']
+        quintile_col = 'Quintile_MQ'        if is_mq else 'Quintile_ACT'
+        score_label  = 'Score global MQ'    if is_mq else 'Performance Score ACT'
         dataset_label= 'Management Quality' if is_mq else 'ACT — Transition Carbone'
 
         dep_gen   = f"{dep_choice}_{period}"
         dep_brent = f"{dep_choice}_Brent"
 
+        # ── Vérification que le Brent est chargé ─────────────────────────────
+        if rallies is None or len(rallies) == 0:
+            return html.Div(
+                "⚠️ Données Brent non disponibles ou aucun rally détecté. "
+                "Vérifiez que brent.parquet est bien présent dans data/.",
+                className='warn-box',
+            )
+
         # ── Calcul métriques Brent ────────────────────────────────────────────
-        tickers = valid['ticker'].dropna().tolist()
-        tickers = [t.strip() for t in tickers] 
+        tickers      = [t.strip() for t in valid['ticker'].dropna().tolist()]
         rdt_b, vol_b = calc_metriques_brent(prices, tickers, rallies)
 
         valid2 = valid.copy()
@@ -116,24 +121,36 @@ def register_callbacks(app, data: dict):
         valid2['Volatilite_Brent'] = valid2['ticker'].map(vol_b)
         valid2 = prepare_ols_data(valid2, score_col, secteur_col)
         valid2 = valid2.dropna(subset=[score_col, secteur_col])
+
+        print(f"DEBUG - Tickers demandés     : {tickers[:5]}")
+        print(f"DEBUG - Tickers dans rdt_b   : {list(rdt_b.keys())[:5]}")
+        print(f"DEBUG - Lignes Rendement_Brent non-vides : {valid2['Rendement_Brent'].notna().sum()}")
+        print(f"DEBUG - Lignes {dep_gen} non-vides : {valid2[dep_gen].notna().sum() if dep_gen in valid2.columns else 'COLONNE ABSENTE'}")
+
+        # ── Vérification colonne période ──────────────────────────────────────
+        if dep_gen not in valid2.columns:
+            return html.Div(
+                f"⚠️ Colonne '{dep_gen}' introuvable dans les données. "
+                f"Colonnes disponibles : {[c for c in valid2.columns if dep_choice in c]}",
+                className='warn-box',
+            )
+
         # ── Régressions ───────────────────────────────────────────────────────
-        print(f"DEBUG - Tickers demandés : {tickers[:5]}")
-        print(f"DEBUG - Tickers trouvés dans rdt_b : {list(rdt_b.keys())[:5]}")
-        print(f"DEBUG - Lignes non-vides pour OLS : {valid2['Rendement_Brent'].notna().sum()}")
         m_gen = run_ols(valid2, dep_gen,   secteur_col, model_type)
         m_br  = run_ols(valid2, dep_brent, secteur_col, model_type)
 
         # ── Metric cards ──────────────────────────────────────────────────────
-        if True:
+        # BUG CORRIGÉ : était "if True" → plante si m_gen ou m_br est None
+        if m_gen is not None and m_br is not None:
             c_gen, p_gen = m_gen.params['Score_std'], m_gen.pvalues['Score_std']
             c_br,  p_br  = m_br.params['Score_std'],  m_br.pvalues['Score_std']
             delta = c_br - c_gen
 
             metric_cards = html.Div(className='row-4', children=[
-                _metric_card('Coef. Général',    f"{c_gen:+.3f} {sig_stars(p_gen)}", p_gen < 0.05),
-                _metric_card('Coef. Brent-up',   f"{c_br:+.3f} {sig_stars(p_br)}",  p_br  < 0.05),
-                _metric_card('Δ (Brent − Gén)',  f"{delta:+.3f}",                    delta > 0),
-                _metric_card('R² (Gén / Br)',    f"{m_gen.rsquared_adj:.2f} / {m_br.rsquared_adj:.2f}", True),
+                _metric_card('Coef. Général',   f"{c_gen:+.3f} {sig_stars(p_gen)}", p_gen < 0.05),
+                _metric_card('Coef. Brent-up',  f"{c_br:+.3f} {sig_stars(p_br)}",  p_br  < 0.05),
+                _metric_card('Δ (Brent − Gén)', f"{delta:+.3f}",                    delta > 0),
+                _metric_card('R² (Gén / Br)',   f"{m_gen.rsquared_adj:.2f} / {m_br.rsquared_adj:.2f}", True),
             ])
 
             interp_note = html.Div()
@@ -144,9 +161,13 @@ def register_callbacks(app, data: dict):
                     className='note-box', style={'marginTop': '12px'},
                 )
         else:
+            # Message d'erreur explicite avec diagnostics
+            n_brent = valid2['Rendement_Brent'].notna().sum()
+            n_gen   = valid2[dep_gen].notna().sum() if dep_gen in valid2.columns else 0
             metric_cards = html.Div(
-                f"Données insuffisantes pour {PERIODS_LABELS.get(period, period)} "
-                "ou pendant les hausses Brent.",
+                f"⚠️ Données insuffisantes pour la régression OLS. "
+                f"Lignes valides — Général : {n_gen}, Brent-up : {n_brent}. "
+                f"Il faut au minimum ~{valid2[secteur_col].nunique() + 10} observations.",
                 className='warn-box',
             )
             interp_note = html.Div()
@@ -172,8 +193,10 @@ def register_callbacks(app, data: dict):
                 ]),
             ])
         else:
-            scatter = html.Div("Échantillon trop restreint pour le nuage de points.",
-                               className='warn-box')
+            scatter = html.Div(
+                "Échantillon trop restreint pour le nuage de points.",
+                className='warn-box',
+            )
 
         # ── Coefficients par secteur ──────────────────────────────────────────
         m_gen_int = run_ols(valid2, dep_gen,   secteur_col, 'interaction')
@@ -182,12 +205,12 @@ def register_callbacks(app, data: dict):
         if m_gen_int and m_br_int:
             data_sect = []
             for s in sorted(valid2[secteur_col].unique()):
-                p_g = m_gen_int.params.get('Score_std', 0)
+                p_g   = m_gen_int.params.get('Score_std', 0)
                 key_g = f'Score_std:C({secteur_col})[T.{s}]'
                 if key_g in m_gen_int.params:
                     p_g += m_gen_int.params[key_g]
 
-                p_b = m_br_int.params.get('Score_std', 0)
+                p_b   = m_br_int.params.get('Score_std', 0)
                 key_b = f'Score_std:C({secteur_col})[T.{s}]'
                 if key_b in m_br_int.params:
                     p_b += m_br_int.params[key_b]
@@ -197,8 +220,10 @@ def register_callbacks(app, data: dict):
 
             coef_secteurs = html.Div(className='card', children=[
                 html.Div(className='card-header', children=[
-                    html.Span('Coefficients par secteur — Général vs Brent-up',
-                              className='card-title'),
+                    html.Span(
+                        'Coefficients par secteur — Général vs Brent-up',
+                        className='card-title',
+                    ),
                 ]),
                 html.Div(className='card-body', children=[
                     dcc.Graph(
@@ -221,11 +246,9 @@ def register_callbacks(app, data: dict):
             q_data.append({'Quintile': q, 'Type': 'Brent-up', 'Valeur': sub[dep_brent].mean()})
 
         if q_data:
-            df_q = pd.DataFrame(q_data)
-
-            # Tableau pivot
+            df_q     = pd.DataFrame(q_data)
             df_pivot = df_q.pivot(index='Quintile', columns='Type', values='Valeur').reset_index()
-            if 'Général' in df_pivot and 'Brent-up' in df_pivot:
+            if 'Général' in df_pivot.columns and 'Brent-up' in df_pivot.columns:
                 df_pivot['Différence'] = df_pivot['Brent-up'] - df_pivot['Général']
                 for col in ['Général', 'Brent-up', 'Différence']:
                     df_pivot[col] = df_pivot[col].apply(lambda x: f"{x:.2%}")
@@ -323,6 +346,7 @@ def _metric_card(label, value, ok=True):
         html.Div(label, className='metric-label'),
         html.Div(value, className='metric-value', style={'color': color}),
     ])
+
 
 def _dd_style():
     return {
