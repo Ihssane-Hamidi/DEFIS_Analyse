@@ -91,15 +91,20 @@ def register_callbacks(app, data: dict):
     def update_brent(period, dep_choice, model_type, dataset):
         print(f"=== BRENT CALLBACK === period={period} dep={dep_choice} dataset={dataset}")
 
-        is_mq        = (dataset != 'act')
-        valid        = data['valid_mq']     if is_mq else data['valid_act']
-        prices       = data['prices_mq']    if is_mq else data['prices_act']
+        
         rallies      = data['rallies']
-        score_col    = 'Score_global_MQ'    if is_mq else data['col_score_act']
-        secteur_col  = 'Macro_Secteur'      if is_mq else data['col_secteur_act']
-        quintile_col = 'Quintile_MQ'        if is_mq else 'Quintile_ACT'
         score_label  = 'Score global MQ'    if is_mq else 'Performance Score ACT'
         dataset_label= 'Management Quality' if is_mq else 'ACT — Transition Carbone'
+        is_mq  = (dataset == 'mq')
+        is_act = (dataset == 'act')
+        is_ca  = (dataset == 'ca')
+
+        valid        = data['valid_mq']   if is_mq else (data['valid_act']  if is_act else data['valid_ca'])
+        prices       = data['prices_mq']  if is_mq else (data['prices_act'] if is_act else data['prices_ca'])
+        score_col    = 'Score_global_MQ'  if is_mq else (data['col_score_act']  if is_act else data['col_score_ca'])
+        secteur_col  = 'Macro_Secteur'    if is_mq else (data['col_secteur_act'] if is_act else data['col_secteur_ca'])
+        quintile_col = 'Quintile_MQ'      if is_mq else ('Quintile_ACT' if is_act else data['col_quintile_ca'])
+        pct_col      = 'MQ_percentile'    if is_mq else ('Score_percentile' if is_act else data['col_pct_ca'])
 
         dep_gen   = f"{dep_choice}_{period}"
         dep_brent = f"{dep_choice}_Brent"
