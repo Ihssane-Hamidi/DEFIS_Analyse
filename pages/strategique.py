@@ -13,7 +13,7 @@ from dash import html, dcc, dash_table, Input, Output
 def layout(ctx: dict):
     is_mq = ctx['is_mq']
 
-    if is_mq:
+    if is_mq or is_ca:
         return html.Div([
             html.Div(className='note-box', style={'marginTop': '20px'}, children=[
                 "📊 Cette section (Narrative & Trend) est spécifique au panel ",
