@@ -182,14 +182,29 @@ def plot_scatter_ols(df, dep_var, quintile_col, x_col='Score_std',
         df_plot,
         x=x_col, y=dep_var,
         color=quintile_col,
-        trendline='ols',
         color_discrete_map=QUINTILE_COLORS,
         hover_name=hover,
         labels={x_col: x_label, dep_var: y_label},
     )
+
+    # Droite de régression via numpy (évite le rechargement de statsmodels → timeout)
+    x = df_plot[x_col].values
+    y = df_plot[dep_var].values
+    mask = np.isfinite(x) & np.isfinite(y)
+    if mask.sum() > 2:
+        coeffs = np.polyfit(x[mask], y[mask], 1)
+        x_line = np.linspace(x[mask].min(), x[mask].max(), 100)
+        y_line = np.polyval(coeffs, x_line)
+        fig.add_trace(go.Scatter(
+            x=x_line, y=y_line,
+            mode='lines',
+            line=dict(color='rgba(255,255,255,0.6)', width=1.5, dash='dash'),
+            name='Tendance',
+            showlegend=False,
+        ))
+
     fig.update_layout(**PLOTLY_LAYOUT, height=450)
     return fig
-
 
 def plot_coefficients_secteurs(data_sect):
     """
