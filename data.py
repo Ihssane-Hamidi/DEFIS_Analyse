@@ -23,10 +23,12 @@ BASE_DIR           = os.path.dirname(os.path.abspath(__file__))
 LOCAL_DIR          = '/Users/hamidi/Desktop/tpi_dash'
 GITHUB_RELEASE_URL = "https://github.com/Ihssane-Hamidi/DEFIS_Analyse/releases/download/v1.0/"
 FILES = {
-    'mq_metriques': 'mq2_metriques.parquet',
-    'mq_prix':      'mq2_prix_journaliers.parquet',
-    'act_metriques':'act_metriques.parquet',
-    'act_prix':     'act_prix_journaliers.parquet',
+    'mq_metriques':  'mq2_metriques.parquet',
+    'mq_prix':       'mq2_prix_journaliers.parquet',
+    'act_metriques': 'act_metriques.parquet',
+    'act_prix':      'act_prix_journaliers.parquet',
+    'ca_metriques':  'CA_metriques.parquet',    # ← ajoute
+    'ca_prix':       'CA_prix_journaliers.parquet',  # ← ajoute
 }
 
 # ── CONSTANTES ────────────────────────────────────────────────────────────────
@@ -83,6 +85,25 @@ def get_parquet(key):
 
 # ── CHARGEMENT (mis en cache) ─────────────────────────────────────────────────
 @lru_cache(maxsize=None)
+def load_ca():
+    return pd.read_parquet(get_parquet('ca_metriques'))
+
+@lru_cache(maxsize=None)
+def load_ca_prix():
+    df = pd.read_parquet(get_parquet('ca_prix'))
+    df.index = pd.to_datetime(df.index)
+    return df
+
+def prepare_valid_ca(df_ca):
+    col_nom = df_ca.columns[0]
+    valid = df_ca[
+        df_ca['ticker'].notna() &
+        (df_ca['ticker'] != 'None') &
+        df_ca['Rendement_2023_2025'].notna()
+    ].copy()
+    valid = valid.rename(columns={col_nom: 'Company Name'})
+    return valid
+@lru_cache(maxsize=None)
 def load_mq():
     return pd.read_parquet(get_parquet('mq_metriques'))
 
@@ -138,6 +159,10 @@ def load_brent():
     except Exception as e:
         print(f"ERREUR : Impossible de trouver ou télécharger {filename} : {e}")
         return pd.Series(dtype=float)
+
+
+
+
 
 # ── PRÉPARATION DES DATAFRAMES ────────────────────────────────────────────────
 def prepare_valid_mq(df_mq):
