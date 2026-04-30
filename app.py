@@ -270,19 +270,39 @@ def route(pathname, dataset):
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
 
-    # Dans la fonction route()
+    dataset = dataset or 'mq'
     is_mq  = (dataset == 'mq')
     is_act = (dataset == 'act')
     is_ca  = (dataset == 'ca')
 
-    valid        = valid_mq  if is_mq else (valid_act  if is_act else valid_ca)
-    prices       = prices_mq if is_mq else (prices_act if is_act else prices_ca)
-    score_col    = 'Score_global_MQ'  if is_mq else (col_score_act  if is_act else col_score_ca)
-    secteur_col  = 'Macro_Secteur'    if is_mq else (col_secteur_act if is_act else col_secteur_ca)
-    quintile_col = 'Quintile_MQ'      if is_mq else ('Quintile_ACT'  if is_act else 'Quintile_CA')
-    dataset_label= 'Management Quality' if is_mq else ('ACT — Transition Carbone' if is_act else 'CA')
-    badge_class  = 'dataset-badge-mq'   if is_mq else ('dataset-badge-act' if is_act else 'dataset-badge-ca')
-
+    if is_mq:
+        valid        = valid_mq
+        prices       = prices_mq
+        score_col    = 'Score_global_MQ'
+        secteur_col  = 'Macro_Secteur'
+        quintile_col = 'Quintile_MQ'
+        pct_col      = 'MQ_percentile'
+        dataset_label= 'Management Quality'
+        badge_class  = 'dataset-badge-mq'
+    elif is_act:
+        valid        = valid_act
+        prices       = prices_act
+        score_col    = col_score_act
+        secteur_col  = col_secteur_act
+        quintile_col = 'Quintile_ACT'
+        pct_col      = 'Score_percentile'
+        dataset_label= 'ACT — Transition Carbone'
+        badge_class  = 'dataset-badge-act'
+    else:
+        valid        = valid_ca
+        prices       = prices_ca
+        score_col    = col_score_ca
+        secteur_col  = col_secteur_ca
+        quintile_col = col_quintile_ca
+        pct_col      = col_pct_ca
+        dataset_label= 'CA — Climate Action'
+        badge_class  = 'dataset-badge-ca'
+        
     page_map = {
         '/accueil':     ('Accueil',           layout_accueil),
         '/societe':     ('Société',           layout_societe),
