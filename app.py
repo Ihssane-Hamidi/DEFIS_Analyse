@@ -6,10 +6,10 @@ TPI · Analyse Financière (Dash + flask-login)
 import dash
 from dash import Dash, dcc, html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
-from flask import Flask, redirect, url_for, request, session
+from flask import Flask, redirect, request
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
-    current_user, login_required,
+    current_user,
 )
 
 from data import (
@@ -33,24 +33,25 @@ from pages.composite   import layout as layout_composite,   register_callbacks a
 # FLASK + LOGIN
 # ══════════════════════════════════════════════════════════════════════════════
 server = Flask(__name__)
-server.secret_key = 'ihssane123'   # ← change en prod
+server.secret_key = 'ihssane123'
 
 login_manager = LoginManager()
 login_manager.init_app(server)
 login_manager.login_view = '/login'
 
-# Utilisateurs en dur (remplace par une BDD en prod)
 USERS = {
-    'admin':  {'password': 'admin123',  'role': 'Admin',   'display': 'Administrateur'},
-    'analyst':{'password': 'analyst123','role': 'Analyst', 'display': 'I. Hamidi'},
-    'viewer': {'password': 'viewer123', 'role': 'Viewer',  'display': 'Lecteur'},
+    'admin':   {'password': 'admin123',   'role': 'Admin',   'display': 'Administrateur'},
+    'analyst': {'password': 'analyst123', 'role': 'Analyst', 'display': 'I. Hamidi'},
+    'viewer':  {'password': 'viewer123',  'role': 'Viewer',  'display': 'Lecteur'},
 }
+
 
 class User(UserMixin):
     def __init__(self, username):
         self.id      = username
         self.role    = USERS[username]['role']
         self.display = USERS[username]['display']
+
 
 @login_manager.user_loader
 def load_user(username):
@@ -59,26 +60,40 @@ def load_user(username):
     return None
 
 
+# ── PROTECTION SYSTÉMATIQUE DE TOUTES LES ROUTES ─────────────────────────────
+@server.before_request
+def require_login():
+    allowed = ['/login', '/logout', '/_dash-', '/assets', '/debug']
+    if any(request.path.startswith(p) for p in allowed):
+        return
+    if not current_user.is_authenticated:
+        return redirect('/login')
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # CHARGEMENT DONNÉES (au démarrage)
 # ══════════════════════════════════════════════════════════════════════════════
 print("Chargement des données...")
-df_mq      = load_mq()
-prices_mq  = load_mq_prix()
-df_act     = load_act()
-prices_act = load_act_prix()
-brent      = load_brent()
-rallies    = detect_oil_rallies(brent)
-valid_mq   = prepare_valid_mq(df_mq)
-valid_act  = prepare_valid_act(df_act)
+try:
+    df_mq      = load_mq()
+    prices_mq  = load_mq_prix()
+    df_act     = load_act()
+    prices_act = load_act_prix()
+    brent      = load_brent()
+    rallies    = detect_oil_rallies(brent)
+    valid_mq   = prepare_valid_mq(df_mq)
+    valid_act  = prepare_valid_act(df_act)
+    print(f"MQ : {len(valid_mq)} entreprises · ACT : {len(valid_act)} entreprises · Rallies Brent : {len(rallies)}")
+except Exception as e:
+    import traceback
+    traceback.print_exc()
+    raise  # on stoppe si les données ne chargent pas
 
 # Colonnes dynamiques ACT
 col_score_act   = 'Score global - Performance Score /100'
 col_secteur_act = 'Secteur'
 col_narr_act    = 'Score global - Narrative Score'
 col_trend_act   = 'Score global - Trend Score'
-
-print(f"MQ : {len(valid_mq)} entreprises · ACT : {len(valid_act)} entreprises · Rallies Brent : {len(rallies)}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -89,24 +104,23 @@ app = Dash(
     server=server,
     url_base_pathname='/',
     suppress_callback_exceptions=True,
-    external_stylesheets=[],   # on utilise assets/style.css
+    external_stylesheets=[],
 )
 app.title = "TPI · Analyse Financière"
 
-# Contexte partagé entre toutes les pages
 APP_DATA = {
-    'df_mq':          df_mq,
-    'prices_mq':      prices_mq,
-    'df_act':         df_act,
-    'prices_act':     prices_act,
-    'brent':          brent,
-    'rallies':        rallies,
-    'valid_mq':       valid_mq,
-    'valid_act':      valid_act,
-    'col_score_act':  col_score_act,
-    'col_secteur_act':col_secteur_act,
-    'col_narr_act':   col_narr_act,
-    'col_trend_act':  col_trend_act,
+    'df_mq':           df_mq,
+    'prices_mq':       prices_mq,
+    'df_act':          df_act,
+    'prices_act':      prices_act,
+    'brent':           brent,
+    'rallies':         rallies,
+    'valid_mq':        valid_mq,
+    'valid_act':       valid_act,
+    'col_score_act':   col_score_act,
+    'col_secteur_act': col_secteur_act,
+    'col_narr_act':    col_narr_act,
+    'col_trend_act':   col_trend_act,
 }
 
 
@@ -114,20 +128,20 @@ APP_DATA = {
 # LAYOUT
 # ══════════════════════════════════════════════════════════════════════════════
 NAV_ITEMS = [
-    ('Accueil',                     'accueil',     ''),
-    ('Société',                     'societe',     str(len(valid_mq))),
-    ('Panel Quintiles',             'panel',       ''),
-    ('Analyse Brent',               'brent',       ''),
-    ('Régression OLS',              'ols',         ''),
-    ('Narrative / Trend',           'strategique', ''),
-    ('Score Composite',             'composite',   ''),
+    ('Accueil',           'accueil',     ''),
+    ('Société',           'societe',     str(len(valid_mq))),
+    ('Panel Quintiles',   'panel',       ''),
+    ('Analyse Brent',     'brent',       ''),
+    ('Régression OLS',    'ols',         ''),
+    ('Narrative / Trend', 'strategique', ''),
+    ('Score Composite',   'composite',   ''),
 ]
+
 
 def sidebar(username='', role='', display=''):
     initials = ''.join([p[0].upper() for p in display.split()[:2]]) if display else 'TPI'
     return html.Div(className='sidebar', children=[
 
-        # Header logo
         html.Div(className='sidebar-header', children=[
             html.Div(className='logo-row', children=[
                 html.Div('T', className='logo-mark'),
@@ -138,7 +152,6 @@ def sidebar(username='', role='', display=''):
             ]),
         ]),
 
-        # Dataset toggle
         html.Div('Référentiel', className='ds-section'),
         html.Div(className='ds-toggle', children=[
             html.Div(
@@ -162,7 +175,6 @@ def sidebar(username='', role='', display=''):
             ),
         ]),
 
-        # Navigation
         html.Div('Vues', className='nav-section-label'),
         *[
             dcc.Link(
@@ -188,7 +200,6 @@ def sidebar(username='', role='', display=''):
             for label, page, badge in NAV_ITEMS[4:]
         ],
 
-        # User footer
         html.Div(className='sidebar-footer', children=[
             html.Div(className='user-card', children=[
                 html.Div(initials, className='avatar'),
@@ -228,7 +239,6 @@ app.layout = html.Div([
 # ══════════════════════════════════════════════════════════════════════════════
 # CALLBACKS
 # ══════════════════════════════════════════════════════════════════════════════
-
 @app.callback(
     Output('store-dataset', 'data'),
     Input('radio-dataset', 'value'),
@@ -244,13 +254,10 @@ def update_dataset_store(value):
     State('store-dataset', 'data'),
 )
 def route(pathname, dataset):
-    """Routing principal — affiche la bonne page selon l'URL."""
-
-    # Page login (gérée par Flask, mais fallback Dash)
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
 
-    is_mq = (dataset != 'act')
+    is_mq        = (dataset != 'act')
     valid        = valid_mq   if is_mq else valid_act
     prices       = prices_mq  if is_mq else prices_act
     score_col    = 'Score_global_MQ' if is_mq else col_score_act
@@ -258,8 +265,8 @@ def route(pathname, dataset):
     quintile_col = 'Quintile_MQ'     if is_mq else 'Quintile_ACT'
     pct_col      = 'MQ_percentile'   if is_mq else 'Score_percentile'
 
-    dataset_label = 'Management Quality' if is_mq else 'ACT — Transition Carbone'
-    badge_class   = 'dataset-badge-mq'   if is_mq else 'dataset-badge-act'
+    dataset_label = 'Management Quality'       if is_mq else 'ACT — Transition Carbone'
+    badge_class   = 'dataset-badge-mq'         if is_mq else 'dataset-badge-act'
 
     page_map = {
         '/accueil':     ('Accueil',           layout_accueil),
@@ -273,19 +280,23 @@ def route(pathname, dataset):
 
     page_name, layout_fn = page_map.get(pathname, ('Accueil', layout_accueil))
 
-    # Contexte passé à chaque page
-    ctx = {**APP_DATA,
-           'is_mq': is_mq, 'valid': valid, 'prices': prices,
-           'score_col': score_col, 'secteur_col': secteur_col,
-           'quintile_col': quintile_col, 'pct_col': pct_col,
-           'dataset_label': dataset_label,
+    ctx = {
+        **APP_DATA,
+        'is_mq':        is_mq,
+        'valid':        valid,
+        'prices':       prices,
+        'score_col':    score_col,
+        'secteur_col':  secteur_col,
+        'quintile_col': quintile_col,
+        'pct_col':      pct_col,
+        'dataset_label': dataset_label,
     }
 
     return html.Div(className='app-shell', children=[
         sidebar(
-            username=current_user.id if current_user.is_authenticated else '',
-            role=current_user.role   if current_user.is_authenticated else '',
-            display=current_user.display if current_user.is_authenticated else '',
+            username=current_user.id      if current_user.is_authenticated else '',
+            role=current_user.role        if current_user.is_authenticated else '',
+            display=current_user.display  if current_user.is_authenticated else '',
         ),
         html.Div(className='main-content', children=[
             topbar(page_name, dataset_label, badge_class),
@@ -301,11 +312,11 @@ def route(pathname, dataset):
 
 
 # ── Callbacks des pages ────────────────────────────────────────────────────────
-cb_societe(app,    APP_DATA)
-cb_brent(app,      APP_DATA)
-cb_ols(app,        APP_DATA)
+cb_societe(app,     APP_DATA)
+cb_brent(app,       APP_DATA)
+cb_ols(app,         APP_DATA)
 cb_strategique(app, APP_DATA)
-cb_composite(app,  APP_DATA)
+cb_composite(app,   APP_DATA)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -314,15 +325,13 @@ cb_composite(app,  APP_DATA)
 @server.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
+        username  = request.form.get('username', '').strip()
+        password  = request.form.get('password', '').strip()
         user_data = USERS.get(username)
         if user_data and user_data['password'] == password:
-            user = User(username)
-            login_user(user, remember=True)
+            login_user(User(username), remember=True)
             return redirect('/')
-        error = 'Identifiants incorrects.'
-        return _login_page(error)
+        return _login_page('Identifiants incorrects.')
     return _login_page()
 
 
@@ -333,9 +342,7 @@ def logout():
 
 
 def _login_page(error=None):
-    error_html = (
-        f'<div class="login-error">{error}</div>' if error else ''
-    )
+    error_html = f'<div class="login-error">{error}</div>' if error else ''
     return f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -370,46 +377,45 @@ def _login_page(error=None):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# LANCEMENT
+# DEBUG ROUTE
 # ══════════════════════════════════════════════════════════════════════════════
 @server.route('/debug')
 def debug():
     import traceback
     lines = []
 
-    # 1. Test chargement données
     lines.append(f"valid_mq : {len(valid_mq)} lignes")
     lines.append(f"valid_act : {len(valid_act)} lignes")
     lines.append(f"Colonnes MQ : {list(valid_mq.columns)}")
     lines.append(f"Colonnes ACT : {list(valid_act.columns)}")
 
-    # 2. Test OLS MQ
-    from utils import prepare_ols_data, run_ols, winsorize
+    from utils import prepare_ols_data, run_ols
     try:
-        dep = 'Rendement_2025'
+        dep    = 'Rendement_2025'
         df_test = valid_mq[['Score_global_MQ', 'Macro_Secteur', dep,
-                              'LogMarketCap', 'BookToMarket', 'Quintile_MQ']].dropna()
+                             'LogMarketCap', 'BookToMarket', 'Quintile_MQ']].dropna()
         lines.append(f"OLS MQ df_test : {len(df_test)} lignes après dropna")
         df_p = prepare_ols_data(df_test, 'Score_global_MQ', 'Macro_Secteur')
-        m = run_ols(df_p, dep, 'Macro_Secteur', 'simple')
+        m    = run_ols(df_p, dep, 'Macro_Secteur', 'simple')
         lines.append(f"OLS MQ résultat : {m}")
-    except Exception as e:
+    except Exception:
         lines.append(f"OLS MQ ERREUR : {traceback.format_exc()}")
 
-    # 3. Test OLS ACT
     try:
-        dep = 'Rendement_2025'
+        dep     = 'Rendement_2025'
         df_test = valid_act[[col_score_act, col_secteur_act, dep,
                               'LogMarketCap', 'BookToMarket']].dropna()
         lines.append(f"OLS ACT df_test : {len(df_test)} lignes après dropna")
-    except Exception as e:
+    except Exception:
         lines.append(f"OLS ACT ERREUR : {traceback.format_exc()}")
 
-    # 4. Valeurs Rendement_2025
     lines.append(f"Rendement_2025 MQ sample : {valid_mq['Rendement_2025'].dropna().head().tolist()}")
 
     return '<br>'.join(lines)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# LANCEMENT
+# ══════════════════════════════════════════════════════════════════════════════
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
