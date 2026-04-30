@@ -27,9 +27,17 @@ def plot_rendements_societe(prices_col, ticker, brent, rallies, company_name):
     Graphique rendements journaliers (barres) + Brent base 100 (axe secondaire).
     prices_col : pd.Series des prix de la société
     """
-    ret_daily = prices_col.dropna()
-    brent_al   = brent.reindex(ret_daily.index, method='ffill').dropna()
+    # Aligner action et Brent sur les dates communes AVANT pct_change
+    common_idx = prices_col.dropna().index.intersection(brent.dropna().index)
+    px_aligned    = prices_col.loc[common_idx]
+    brent_aligned = brent.loc[common_idx]
+
+    ret_daily  = px_aligned.pct_change().dropna()
+    brent_al   = brent_aligned.reindex(ret_daily.index).dropna()
     brent_norm = brent_al / brent_al.iloc[0] * 100
+
+    # Winsoriser pour éviter les outliers résiduels (±15% max par jour)
+    ret_daily = ret_daily.clip(-0.15, 0.15)
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig = add_oil_rectangles(fig, rallies, first_only=True)
