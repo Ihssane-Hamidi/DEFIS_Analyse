@@ -18,6 +18,7 @@ from data import (
     PERIODS_LABELS,
 )
 from utils import detect_oil_rallies
+from data import load_ca, load_ca_prix, prepare_valid_ca
 
 # ── PAGES ─────────────────────────────────────────────────────────────────────
 from pages.accueil     import layout as layout_accueil
@@ -83,6 +84,9 @@ try:
     rallies    = detect_oil_rallies(brent)
     valid_mq   = prepare_valid_mq(df_mq)
     valid_act  = prepare_valid_act(df_act)
+    df_ca      = load_ca()
+    prices_ca  = load_ca_prix()
+    valid_ca   = prepare_valid_ca(df_ca)
     print(f"MQ : {len(valid_mq)} entreprises · ACT : {len(valid_act)} entreprises · Rallies Brent : {len(rallies)}")
 except Exception as e:
     import traceback
@@ -94,6 +98,8 @@ col_score_act   = 'Score global - Performance Score /100'
 col_secteur_act = 'Secteur'
 col_narr_act    = 'Score global - Narrative Score'
 col_trend_act   = 'Score global - Trend Score'
+col_score_ca   = 'Score_global_CA'          
+col_secteur_ca = 'Sector'   
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -106,7 +112,7 @@ app = Dash(
     suppress_callback_exceptions=True,
     external_stylesheets=[],
 )
-app.title = "TPI · Analyse Financière"
+app.title = "DEFIS · Analyse Financière"
 
 APP_DATA = {
     'df_mq':           df_mq,
@@ -121,6 +127,11 @@ APP_DATA = {
     'col_secteur_act': col_secteur_act,
     'col_narr_act':    col_narr_act,
     'col_trend_act':   col_trend_act,
+    'df_ca':          df_ca,
+    'prices_ca':      prices_ca,
+    'valid_ca':       valid_ca,
+    'col_score_ca':   col_score_ca,
+    'col_secteur_ca': col_secteur_ca,
 }
 
 
@@ -160,7 +171,9 @@ def sidebar(username='', role='', display=''):
                     options=[
                         {'label': 'MQ',  'value': 'mq'},
                         {'label': 'ACT', 'value': 'act'},
+                        {'label': 'CA',  'value': 'ca'},
                     ],
+               
                     value='mq',
                     inline=True,
                     inputStyle={'display': 'none'},
@@ -257,16 +270,18 @@ def route(pathname, dataset):
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
 
-    is_mq        = (dataset != 'act')
-    valid        = valid_mq   if is_mq else valid_act
-    prices       = prices_mq  if is_mq else prices_act
-    score_col    = 'Score_global_MQ' if is_mq else col_score_act
-    secteur_col  = 'Macro_Secteur'   if is_mq else col_secteur_act
-    quintile_col = 'Quintile_MQ'     if is_mq else 'Quintile_ACT'
-    pct_col      = 'MQ_percentile'   if is_mq else 'Score_percentile'
+    # Dans la fonction route()
+    is_mq  = (dataset == 'mq')
+    is_act = (dataset == 'act')
+    is_ca  = (dataset == 'ca')
 
-    dataset_label = 'Management Quality'       if is_mq else 'ACT — Transition Carbone'
-    badge_class   = 'dataset-badge-mq'         if is_mq else 'dataset-badge-act'
+    valid        = valid_mq  if is_mq else (valid_act  if is_act else valid_ca)
+    prices       = prices_mq if is_mq else (prices_act if is_act else prices_ca)
+    score_col    = 'Score_global_MQ'  if is_mq else (col_score_act  if is_act else col_score_ca)
+    secteur_col  = 'Macro_Secteur'    if is_mq else (col_secteur_act if is_act else col_secteur_ca)
+    quintile_col = 'Quintile_MQ'      if is_mq else ('Quintile_ACT'  if is_act else 'Quintile_CA')
+    dataset_label= 'Management Quality' if is_mq else ('ACT — Transition Carbone' if is_act else 'CA')
+    badge_class  = 'dataset-badge-mq'   if is_mq else ('dataset-badge-act' if is_act else 'dataset-badge-ca')
 
     page_map = {
         '/accueil':     ('Accueil',           layout_accueil),
