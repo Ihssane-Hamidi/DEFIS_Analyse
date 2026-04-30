@@ -205,7 +205,6 @@ def plot_coefficients_secteurs(data_sect):
     )
     fig.update_layout(
         **PLOTLY_LAYOUT, height=600,
-        margin=dict(l=20, r=20, t=20, b=20),
     )
     return fig
 
