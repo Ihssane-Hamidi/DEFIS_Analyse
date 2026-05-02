@@ -10,7 +10,7 @@ from charts import (
     plot_coefficients_secteurs,
     plot_quintiles_general_vs_brent,
 )
-from utils import calc_metriques_brent, prepare_ols_data, winsorize, run_ols, sig_stars
+from utils import prepare_ols_data, run_ols, sig_stars
 from data import PERIODS_LABELS
 
 
@@ -89,63 +89,67 @@ def register_callbacks(app, data: dict):
         Input('store-dataset', 'data'),
     )
     def update_brent(period, dep_choice, model_type, dataset):
-        print(f"=== BRENT CALLBACK === period={period} dep={dep_choice} dataset={dataset}")
 
-        
-        rallies      = data['rallies']
-        score_label  = 'Score global MQ'    if is_mq else 'Performance Score ACT'
-        dataset_label= 'Management Quality' if is_mq else 'ACT — Transition Carbone'
+        # ── 1. Dataset ────────────────────────────────────────────────────────
+        # CORRIGÉ : is_mq/is_act/is_ca définis EN PREMIER
         is_mq  = (dataset == 'mq')
         is_act = (dataset == 'act')
         is_ca  = (dataset == 'ca')
 
-        valid        = data['valid_mq']   if is_mq else (data['valid_act']  if is_act else data['valid_ca'])
-        prices       = data['prices_mq']  if is_mq else (data['prices_act'] if is_act else data['prices_ca'])
-        score_col    = 'Score_global_MQ'  if is_mq else (data['col_score_act']  if is_act else data['col_score_ca'])
-        secteur_col  = 'Macro_Secteur'    if is_mq else (data['col_secteur_act'] if is_act else data['col_secteur_ca'])
-        quintile_col = 'Quintile_MQ'      if is_mq else ('Quintile_ACT' if is_act else data['col_quintile_ca'])
-        pct_col      = 'MQ_percentile'    if is_mq else ('Score_percentile' if is_act else data['col_pct_ca'])
+        valid        = data['valid_mq']  if is_mq else (data['valid_act']  if is_act else data['valid_ca'])
+        score_col    = 'Score_global_MQ' if is_mq else (data['col_score_act']   if is_act else data['col_score_ca'])
+        secteur_col  = 'Macro_Secteur'   if is_mq else (data['col_secteur_act'] if is_act else data['col_secteur_ca'])
+        quintile_col = 'Quintile_MQ'     if is_mq else ('Quintile_ACT'          if is_act else data['col_quintile_ca'])
+        score_label  = 'Score MQ'        if is_mq else ('Score ACT'             if is_act else 'Score CA')
 
-        dep_gen   = f"{dep_choice}_{period}"
-        dep_brent = f"{dep_choice}_Brent"
+        # ── 2. Métriques Brent — lues depuis le cache APP_DATA ────────────────
+        # CORRIGÉ : plus de calc_metriques_brent() ici, déjà calculé au démarrage
+        rallies = data['rallies']
 
-        # ── Vérification que le Brent est chargé ─────────────────────────────
         if rallies is None or len(rallies) == 0:
             return html.Div(
-                "⚠️ Données Brent non disponibles ou aucun rally détecté. "
-                "Vérifiez que brent.parquet est bien présent dans data/.",
+                "⚠️ Données Brent non disponibles ou aucun rally détecté.",
                 className='warn-box',
             )
 
-        # ── Calcul métriques Brent ────────────────────────────────────────────
-        tickers      = [t.strip() for t in valid['ticker'].dropna().tolist()]
-        rdt_b, vol_b = calc_metriques_brent(prices, tickers, rallies)
+        rdt_b = data['rdt_b_mq']  if is_mq else (data['rdt_b_act']  if is_act else data['rdt_b_ca'])
+        vol_b = data['vol_b_mq']  if is_mq else (data['vol_b_act']  if is_act else data['vol_b_ca'])
 
+        # ── 3. Construction valid2 ────────────────────────────────────────────
         valid2 = valid.copy()
         valid2['Rendement_Brent']  = valid2['ticker'].map(rdt_b)
         valid2['Volatilite_Brent'] = valid2['ticker'].map(vol_b)
         valid2 = prepare_ols_data(valid2, score_col, secteur_col)
         valid2 = valid2.dropna(subset=[score_col, secteur_col])
 
-        print(f"DEBUG - Tickers demandés     : {tickers[:5]}")
-        print(f"DEBUG - Tickers dans rdt_b   : {list(rdt_b.keys())[:5]}")
-        print(f"DEBUG - Lignes Rendement_Brent non-vides : {valid2['Rendement_Brent'].notna().sum()}")
-        print(f"DEBUG - Lignes {dep_gen} non-vides : {valid2[dep_gen].notna().sum() if dep_gen in valid2.columns else 'COLONNE ABSENTE'}")
+        dep_gen   = f"{dep_choice}_{period}"
+        dep_brent = f"{dep_choice}_Brent"
 
-        # ── Vérification colonne période ──────────────────────────────────────
+        # ── 4. Vérification colonne période ───────────────────────────────────
         if dep_gen not in valid2.columns:
             return html.Div(
-                f"⚠️ Colonne '{dep_gen}' introuvable dans les données. "
-                f"Colonnes disponibles : {[c for c in valid2.columns if dep_choice in c]}",
+                f"⚠️ Colonne '{dep_gen}' introuvable. "
+                f"Disponibles : {[c for c in valid2.columns if dep_choice in c]}",
                 className='warn-box',
             )
 
-        # ── Régressions ───────────────────────────────────────────────────────
+        # ── 5. Régressions OLS (2 seulement) ─────────────────────────────────
+        # CORRIGÉ : on fait 2 OLS avec le model_type choisi
+        # les OLS interaction pour le graphique secteurs réutilisent
+        # les mêmes résultats si model_type == 'interaction'
         m_gen = run_ols(valid2, dep_gen,   secteur_col, model_type)
         m_br  = run_ols(valid2, dep_brent, secteur_col, model_type)
 
-        # ── Metric cards ──────────────────────────────────────────────────────
-        # BUG CORRIGÉ : était "if True" → plante si m_gen ou m_br est None
+        # OLS interaction pour le graphique secteurs
+        # CORRIGÉ : on ne refait pas 2 OLS si déjà en mode interaction
+        if model_type == 'interaction':
+            m_gen_int = m_gen
+            m_br_int  = m_br
+        else:
+            m_gen_int = run_ols(valid2, dep_gen,   secteur_col, 'interaction')
+            m_br_int  = run_ols(valid2, dep_brent, secteur_col, 'interaction')
+
+        # ── 6. Metric cards ───────────────────────────────────────────────────
         if m_gen is not None and m_br is not None:
             c_gen, p_gen = m_gen.params['Score_std'], m_gen.pvalues['Score_std']
             c_br,  p_br  = m_br.params['Score_std'],  m_br.pvalues['Score_std']
@@ -166,47 +170,39 @@ def register_callbacks(app, data: dict):
                     className='note-box', style={'marginTop': '12px'},
                 )
         else:
-            # Message d'erreur explicite avec diagnostics
             n_brent = valid2['Rendement_Brent'].notna().sum()
             n_gen   = valid2[dep_gen].notna().sum() if dep_gen in valid2.columns else 0
             metric_cards = html.Div(
                 f"⚠️ Données insuffisantes pour la régression OLS. "
-                f"Lignes valides — Général : {n_gen}, Brent-up : {n_brent}. "
-                f"Il faut au minimum ~{valid2[secteur_col].nunique() + 10} observations.",
+                f"Lignes valides — Général : {n_gen}, Brent-up : {n_brent}.",
                 className='warn-box',
             )
             interp_note = html.Div()
 
-        # ── Scatter Brent-up ──────────────────────────────────────────────────
+        # ── 7. Scatter Brent-up ───────────────────────────────────────────────
         df_scatter = valid2.dropna(subset=[dep_brent, 'Score_std', quintile_col])
-        if not df_scatter.empty:
-            scatter = html.Div(className='card', children=[
-                html.Div(className='card-header', children=[
-                    html.Span(
-                        f'Score standardisé vs {dep_choice} (période Brent-up)',
-                        className='card-title',
+        scatter = html.Div(className='card', children=[
+            html.Div(className='card-header', children=[
+                html.Span(
+                    f'Score standardisé vs {dep_choice} (période Brent-up)',
+                    className='card-title',
+                ),
+            ]),
+            html.Div(className='card-body', children=[
+                dcc.Graph(
+                    figure=plot_scatter_ols(
+                        df_scatter, dep_brent, quintile_col,
+                        y_label=f'{dep_choice} (Brent-up)',
                     ),
-                ]),
-                html.Div(className='card-body', children=[
-                    dcc.Graph(
-                        figure=plot_scatter_ols(
-                            df_scatter, dep_brent, quintile_col,
-                            y_label=f'{dep_choice} (Brent-up)',
-                        ),
-                        config={'displayModeBar': False},
-                    ),
-                ]),
-            ])
-        else:
-            scatter = html.Div(
-                "Échantillon trop restreint pour le nuage de points.",
-                className='warn-box',
-            )
+                    config={'displayModeBar': False},
+                ),
+            ]),
+        ]) if not df_scatter.empty else html.Div(
+            "Échantillon trop restreint pour le nuage de points.",
+            className='warn-box',
+        )
 
-        # ── Coefficients par secteur ──────────────────────────────────────────
-        m_gen_int = run_ols(valid2, dep_gen,   secteur_col, 'interaction')
-        m_br_int  = run_ols(valid2, dep_brent, secteur_col, 'interaction')
-
+        # ── 8. Coefficients par secteur ───────────────────────────────────────
         if m_gen_int and m_br_int:
             data_sect = []
             for s in sorted(valid2[secteur_col].unique()):
@@ -243,7 +239,7 @@ def register_callbacks(app, data: dict):
                 className='warn-box',
             )
 
-        # ── Quintiles Général vs Brent-up ─────────────────────────────────────
+        # ── 9. Quintiles Général vs Brent-up ──────────────────────────────────
         q_data = []
         for q in sorted(valid2[quintile_col].dropna().unique()):
             sub = valid2[valid2[quintile_col] == q]
@@ -305,7 +301,7 @@ def register_callbacks(app, data: dict):
         else:
             quintile_section = html.Div()
 
-        # ── Summaries OLS ─────────────────────────────────────────────────────
+        # ── 10. Summaries OLS ─────────────────────────────────────────────────
         summaries = html.Details([
             html.Summary(
                 'Consulter les rapports statistiques complets (OLS Summary)',
@@ -332,6 +328,7 @@ def register_callbacks(app, data: dict):
             ]),
         ])
 
+        # ── 11. Assemblage final ──────────────────────────────────────────────
         return html.Div([
             metric_cards,
             interp_note,
