@@ -95,25 +95,28 @@ def register_callbacks(app, data: dict):
 
         if is_mq:
             extra_items = [
-                ('Niveau',       row.get('Level',         'N/A')),
-                ('Quintile',     row.get('Quintile_MQ',   'N/A')),
-                ('Secteur',      row.get('Sector',        'N/A')),
-                ('Macro-secteur',row.get('Macro_Secteur', 'N/A')),
-                ('Géographie',   row.get('Geography',     'N/A')),
+            ('Niveau',        row.get('Level',         'N/A')),
+            ('Quintile',      row.get('Quintile_MQ',   'N/A')),
+            ('Secteur',       row.get('Sector',        'N/A')),
+            ('Macro-secteur', row.get('Macro_Secteur', 'N/A')),
+            ('Géographie',    row.get('Geography',     'N/A')),
             ]
-        else:
-            col_J = data['col_narr_act']
-            col_K = data['col_trend_act']
-            col_s = data['col_secteur_act']
+        elif is_act:
             extra_items = [
-                ('Narrative', row.get(col_J, 'N/A')),
-                ('Trend',     row.get(col_K, 'N/A')),
-                ('Secteur',   row.get(col_s, 'N/A')),
-                ('Quintile',  row.get('Quintile_ACT', 'N/A')),
+            ('Narrative', row.get(data['col_narr_act'],  'N/A')),
+            ('Trend',     row.get(data['col_trend_act'], 'N/A')),
+            ('Secteur',   row.get(data['col_secteur_act'],'N/A')),
+            ('Quintile',  row.get('Quintile_ACT',        'N/A')),
             ]
-
+        else:  # CA
+            extra_items = [
+            ('Secteur',  row.get(data['col_secteur_ca'], 'N/A')),
+            ('Quintile', row.get(data['col_quintile_ca'],'N/A')),
+            ('Score',    row.get(data['col_score_ca'],   'N/A')),
+            ]
+            
         score_panel = html.Div(className='metric-card', children=[
-            html.Div(score_label, className='metric-label'),
+            html.Div(label, className='metric-label'),
             html.Div(score_fmt,   className='metric-value', style={'color': fg}),
             html.Div(style={'marginTop': '10px'}, children=[
                 html.Span(
@@ -166,7 +169,7 @@ def register_callbacks(app, data: dict):
                 html.Div(className='card-body', children=[
                     dcc.Graph(
                         figure=plot_rendements_societe(
-                            px_series, ticker, brent, rallies, company_name
+                           px_series, ticker, data['brent'], data['rallies'], company_name 
                         ),
                         config={'displayModeBar': False},
                     ),
