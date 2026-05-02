@@ -1,6 +1,6 @@
 """
 app.py — Point d'entrée principal
-TPI · Analyse Financière (Dash + flask-login)
+DEFIS · Analyse Financière (Dash + flask-login)
 """
 
 import dash
@@ -28,13 +28,14 @@ from pages.brent       import layout as layout_brent,       register_callbacks a
 from pages.ols         import layout as layout_ols,         register_callbacks as cb_ols
 from pages.strategique import layout as layout_strategique, register_callbacks as cb_strategique
 from pages.composite   import layout as layout_composite,   register_callbacks as cb_composite
-
+import os
+server.secret_key = os.environ.get('SECRET_KEY', 'fallback-local-dev')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FLASK + LOGIN
 # ══════════════════════════════════════════════════════════════════════════════
 server = Flask(__name__)
-server.secret_key = 'ihssane123'
+server.secret_key = os.environ.get('SECRET_KEY', 'fallback-local-dev')
 
 login_manager = LoginManager()
 login_manager.init_app(server)
