@@ -3,6 +3,7 @@ pages/brent.py — Page Analyse Brent
 TPI · Analyse Financière (Dash)
 """
 
+
 import pandas as pd
 from dash import html, dcc, dash_table, Input, Output
 from charts import (
