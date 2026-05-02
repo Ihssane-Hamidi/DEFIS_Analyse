@@ -159,10 +159,11 @@ def layout(ctx: dict):
         sub = valid_q[valid_q[q_col] == q]
         if sub.empty:
             continue
-        score_fmt = (
-            f"{sub[s_col].mean():.1%}"
-            if is_mq else f"{sub[s_col].mean():.1f}"
-        )
+    if is_mq:
+        score_fmt = f"{sub[s_col].mean():.1%}"
+    else:
+        score_fmt = f"{(sub[s_col].mean() / 100):.1%}"
+
         rows_t.append({
             'Quintile':    q,
             'N':           len(sub),
