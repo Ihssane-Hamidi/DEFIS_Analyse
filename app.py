@@ -254,34 +254,17 @@ app.layout = html.Div([
 # ══════════════════════════════════════════════════════════════════════════════
 @app.callback(
     Output('store-dataset', 'data'),
-    Output('radio-dataset', 'value'),
-    Input('radio-dataset',  'value'),
-    Input('store-dataset',  'data'),
+    Input('radio-dataset', 'value'),
 )
-def sync_dataset(radio_val, store_val):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        # Premier rendu : on lit le store (peut contenir 'act' ou 'ca' sauvegardé)
-        return store_val or 'mq', store_val or 'mq'
-
-    trigger = ctx.triggered[0]['prop_id']
-
-    if trigger == 'radio-dataset.value':
-        # L'utilisateur a cliqué → on met à jour le store
-        return radio_val, radio_val
-
-    if trigger == 'store-dataset.data':
-        # Montage / F5 → on aligne le radio sur le store
-        return store_val, store_val
-
-    return store_val or 'mq', store_val or 'mq'
-
+def update_dataset_store(value):
+    return value or 'mq'
 
 @app.callback(
     Output('app-container', 'children'),
     Input('url', 'pathname'),
-    State('store-dataset', 'data'),
+    Input('store-dataset', 'data'),  
 )
+
 def route(pathname, dataset):
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
