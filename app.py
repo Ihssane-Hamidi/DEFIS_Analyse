@@ -19,6 +19,14 @@ from data import (
 )
 from utils import detect_oil_rallies
 from data import load_ca, load_ca_prix, prepare_valid_ca
+from utils import calc_metriques_brent
+
+tickers_mq       = [t.strip() for t in valid_mq['ticker'].dropna().tolist()]
+rdt_b_mq, vol_b_mq = calc_metriques_brent(prices_mq, tickers_mq, rallies)
+
+tickers_act         = [t.strip() for t in valid_act['ticker'].dropna().tolist()]
+rdt_b_act, vol_b_act = calc_metriques_brent(prices_act, tickers_act, rallies)
+
 
 # ── PAGES ─────────────────────────────────────────────────────────────────────
 from pages.accueil     import layout as layout_accueil
@@ -132,6 +140,11 @@ APP_DATA = {
     'valid_ca':       valid_ca,
     'col_score_ca':   col_score_ca,
     'col_secteur_ca': col_secteur_ca,
+    'rdt_b_mq':  rdt_b_mq,
+    'vol_b_mq':  vol_b_mq,
+    'rdt_b_act': rdt_b_act,
+    'vol_b_act': vol_b_act,
+}
 }
 
 
