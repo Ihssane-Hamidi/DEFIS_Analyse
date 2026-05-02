@@ -2,7 +2,7 @@
 app.py — Point d'entrée principal
 DEFIS · Analyse Financière (Dash + flask-login)
 """
-
+import os
 import dash
 from dash import Dash, dcc, html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
@@ -28,8 +28,8 @@ from pages.brent       import layout as layout_brent,       register_callbacks a
 from pages.ols         import layout as layout_ols,         register_callbacks as cb_ols
 from pages.strategique import layout as layout_strategique, register_callbacks as cb_strategique
 from pages.composite   import layout as layout_composite,   register_callbacks as cb_composite
-import os
-server.secret_key = os.environ.get('SECRET_KEY', 'fallback-local-dev')
+
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FLASK + LOGIN
