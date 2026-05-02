@@ -17,10 +17,8 @@ from data import (
     prepare_valid_mq, prepare_valid_act,
     PERIODS_LABELS,
 )
-from utils import detect_oil_rallies
+from utils import detect_oil_rallies, calc_metriques_brent
 from data import load_ca, load_ca_prix, prepare_valid_ca
-from utils import calc_metriques_brent
-
 
 # ── PAGES ─────────────────────────────────────────────────────────────────────
 from pages.accueil     import layout as layout_accueil
@@ -78,6 +76,7 @@ def require_login():
 # ══════════════════════════════════════════════════════════════════════════════
 print("Chargement des données...")
 try:
+    # ── Étape 1 : chargement brut ─────────────────────────────────────────────
     df_mq      = load_mq()
     prices_mq  = load_mq_prix()
     df_act     = load_act()
@@ -89,30 +88,37 @@ try:
     df_ca      = load_ca()
     prices_ca  = load_ca_prix()
     valid_ca   = prepare_valid_ca(df_ca)
-    print(f"MQ : {len(valid_mq)} entreprises · ACT : {len(valid_act)} entreprises · Rallies Brent : {len(rallies)}")
-from utils import calc_metriques_brent
+    print(f"MQ : {len(valid_mq)} · ACT : {len(valid_act)} · Rallies Brent : {len(rallies)}")
 
-tickers_mq          = [t.strip() for t in valid_mq['ticker'].dropna().tolist()]
-rdt_b_mq, vol_b_mq  = calc_metriques_brent(prices_mq, tickers_mq, rallies)
+    # ── Étape 2 : cache métriques Brent ──────────────────────────────────────
+    tickers_mq          = [t.strip() for t in valid_mq['ticker'].dropna().tolist()]
+    rdt_b_mq, vol_b_mq  = calc_metriques_brent(prices_mq,  tickers_mq,  rallies)
 
-tickers_act           = [t.strip() for t in valid_act['ticker'].dropna().tolist()]
-rdt_b_act, vol_b_act  = calc_metriques_brent(prices_act, tickers_act, rallies)
+    tickers_act           = [t.strip() for t in valid_act['ticker'].dropna().tolist()]
+    rdt_b_act, vol_b_act  = calc_metriques_brent(prices_act, tickers_act, rallies)
 
-tickers_ca            = [t.strip() for t in valid_ca['ticker'].dropna().tolist()]
-rdt_b_ca, vol_b_ca    = calc_metriques_brent(prices_ca, tickers_ca, rallies)
+    tickers_ca            = [t.strip() for t in valid_ca['ticker'].dropna().tolist()]
+    rdt_b_ca, vol_b_ca    = calc_metriques_brent(prices_ca,  tickers_ca,  rallies)
+
+    print("Cache Brent OK")
 
 except Exception as e:
     import traceback
     traceback.print_exc()
-    raise  # on stoppe si les données ne chargent pas
+    raise
 
-# Colonnes dynamiques ACT
+
+# ══════════════════════════════════════════════════════════════════════════════
+# COLONNES DYNAMIQUES
+# ══════════════════════════════════════════════════════════════════════════════
 col_score_act   = 'Score global - Performance Score /100'
 col_secteur_act = 'Secteur'
 col_narr_act    = 'Score global - Narrative Score'
 col_trend_act   = 'Score global - Trend Score'
-col_score_ca   = 'Score_global_CA'          
-col_secteur_ca = 'Sector'   
+col_score_ca    = 'Score_global_CA'
+col_secteur_ca  = 'Sector'
+col_quintile_ca = 'Quintile_CA'
+col_pct_ca      = 'CA_percentile'
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -140,19 +146,20 @@ APP_DATA = {
     'col_secteur_act': col_secteur_act,
     'col_narr_act':    col_narr_act,
     'col_trend_act':   col_trend_act,
-    'df_ca':          df_ca,
-    'prices_ca':      prices_ca,
-    'valid_ca':       valid_ca,
-    'col_score_ca':   col_score_ca,
-    'col_secteur_ca': col_secteur_ca,
-    'rdt_b_mq':  rdt_b_mq,
-    'vol_b_mq':  vol_b_mq,
-    'rdt_b_act': rdt_b_act,
-    'vol_b_act': vol_b_act,
-    'rdt_b_ca':  rdt_b_ca,
-    'vol_b_ca':  vol_b_ca,
+    'df_ca':           df_ca,
+    'prices_ca':       prices_ca,
+    'valid_ca':        valid_ca,
+    'col_score_ca':    col_score_ca,
+    'col_secteur_ca':  col_secteur_ca,
+    'col_quintile_ca': col_quintile_ca,
+    'col_pct_ca':      col_pct_ca,
+    'rdt_b_mq':        rdt_b_mq,
+    'vol_b_mq':        vol_b_mq,
+    'rdt_b_act':       rdt_b_act,
+    'vol_b_act':       vol_b_act,
+    'rdt_b_ca':        rdt_b_ca,
+    'vol_b_ca':        vol_b_ca,
 }
-
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -193,8 +200,7 @@ def sidebar(username='', role='', display=''):
                         {'label': 'ACT', 'value': 'act'},
                         {'label': 'CA',  'value': 'ca'},
                     ],
-               
-                    value=None ,
+                    value=None,
                     inline=True,
                     inputStyle={'display': 'none'},
                     labelStyle={
@@ -279,12 +285,12 @@ app.layout = html.Div([
 def update_dataset_store(value):
     return value or 'mq'
 
+
 @app.callback(
     Output('app-container', 'children'),
     Input('url', 'pathname'),
-    Input('store-dataset', 'data'),  
+    Input('store-dataset', 'data'),
 )
-
 def route(pathname, dataset):
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
@@ -295,33 +301,33 @@ def route(pathname, dataset):
     is_ca  = (dataset == 'ca')
 
     if is_mq:
-        valid        = valid_mq
-        prices       = prices_mq
-        score_col    = 'Score_global_MQ'
-        secteur_col  = 'Macro_Secteur'
-        quintile_col = 'Quintile_MQ'
-        pct_col      = 'MQ_percentile'
-        dataset_label= 'Management Quality'
-        badge_class  = 'dataset-badge-mq'
+        valid         = valid_mq
+        prices        = prices_mq
+        score_col     = 'Score_global_MQ'
+        secteur_col   = 'Macro_Secteur'
+        quintile_col  = 'Quintile_MQ'
+        pct_col       = 'MQ_percentile'
+        dataset_label = 'Management Quality'
+        badge_class   = 'dataset-badge-mq'
     elif is_act:
-        valid        = valid_act
-        prices       = prices_act
-        score_col    = col_score_act
-        secteur_col  = col_secteur_act
-        quintile_col = 'Quintile_ACT'
-        pct_col      = 'Score_percentile'
-        dataset_label= 'ACT — Transition Carbone'
-        badge_class  = 'dataset-badge-act'
+        valid         = valid_act
+        prices        = prices_act
+        score_col     = col_score_act
+        secteur_col   = col_secteur_act
+        quintile_col  = 'Quintile_ACT'
+        pct_col       = 'Score_percentile'
+        dataset_label = 'ACT — Transition Carbone'
+        badge_class   = 'dataset-badge-act'
     else:
-        valid        = valid_ca
-        prices       = prices_ca
-        score_col    = col_score_ca
-        secteur_col  = col_secteur_ca
-        quintile_col = 'Quintile_CA'
-        pct_col      = 'CA_percentile'
-        dataset_label= 'CA — Climate Action'
-        badge_class  = 'dataset-badge-ca'
-        
+        valid         = valid_ca
+        prices        = prices_ca
+        score_col     = col_score_ca
+        secteur_col   = col_secteur_ca
+        quintile_col  = col_quintile_ca
+        pct_col       = col_pct_ca
+        dataset_label = 'CA — Climate Action'
+        badge_class   = 'dataset-badge-ca'
+
     page_map = {
         '/accueil':     ('Accueil',           layout_accueil),
         '/societe':     ('Société',           layout_societe),
@@ -336,13 +342,13 @@ def route(pathname, dataset):
 
     ctx = {
         **APP_DATA,
-        'is_mq':        is_mq,
-        'valid':        valid,
-        'prices':       prices,
-        'score_col':    score_col,
-        'secteur_col':  secteur_col,
-        'quintile_col': quintile_col,
-        'pct_col':      pct_col,
+        'is_mq':         is_mq,
+        'valid':         valid,
+        'prices':        prices,
+        'score_col':     score_col,
+        'secteur_col':   secteur_col,
+        'quintile_col':  quintile_col,
+        'pct_col':       pct_col,
         'dataset_label': dataset_label,
     }
 
@@ -365,7 +371,7 @@ def route(pathname, dataset):
     ])
 
 
-# ── Callbacks des pages ────────────────────────────────────────────────────────
+# ── Callbacks des pages ───────────────────────────────────────────────────────
 cb_societe(app,     APP_DATA)
 cb_brent(app,       APP_DATA)
 cb_ols(app,         APP_DATA)
@@ -437,15 +443,14 @@ def _login_page(error=None):
 def debug():
     import traceback
     lines = []
-
-    lines.append(f"valid_mq : {len(valid_mq)} lignes")
+    lines.append(f"valid_mq  : {len(valid_mq)} lignes")
     lines.append(f"valid_act : {len(valid_act)} lignes")
-    lines.append(f"Colonnes MQ : {list(valid_mq.columns)}")
+    lines.append(f"Colonnes MQ  : {list(valid_mq.columns)}")
     lines.append(f"Colonnes ACT : {list(valid_act.columns)}")
 
     from utils import prepare_ols_data, run_ols
     try:
-        dep    = 'Rendement_2025'
+        dep     = 'Rendement_2025'
         df_test = valid_mq[['Score_global_MQ', 'Macro_Secteur', dep,
                              'LogMarketCap', 'BookToMarket', 'Quintile_MQ']].dropna()
         lines.append(f"OLS MQ df_test : {len(df_test)} lignes après dropna")
@@ -464,7 +469,6 @@ def debug():
         lines.append(f"OLS ACT ERREUR : {traceback.format_exc()}")
 
     lines.append(f"Rendement_2025 MQ sample : {valid_mq['Rendement_2025'].dropna().head().tolist()}")
-
     return '<br>'.join(lines)
 
 
