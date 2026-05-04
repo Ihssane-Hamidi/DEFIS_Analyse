@@ -28,8 +28,11 @@ def layout(ctx: dict):
     if is_mq:
         titre = "TPI Management Quality · Analyse Financière"
         sous  = "Édition 2025 · Données boursières 2023–2025"
-    else:
+    if is_act:
         titre = "ACT — Assessing low Carbon Transition · Analyse Financière"
+        sous  = "Évaluation 2025 · Données boursières 2023–2025"
+    if is_ca:
+        titre = "CA — Climate Action 100+ · Analyse Financière"
         sous  = "Évaluation 2025 · Données boursières 2023–2025"
 
     # ── KPI cards ────────────────────────────────────────────────────────────
