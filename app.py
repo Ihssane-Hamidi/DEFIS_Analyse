@@ -293,24 +293,23 @@ app.layout = html.Div([
 # CALLBACKS
 # ══════════════════════════════════════════════════════════════════════════════
 @app.callback(
-    Output('store-dataset', 'data'),
-    Input('radio-dataset', 'value'),
+    Output('app-container', 'children'),
+    Input('url', 'pathname'),
+    Input('store-dataset', 'data'), 
 )
 def update_dataset_store(value):
     return value or 'mq'
 
 
-@app.callback(
-    Output('app-container', 'children'),
-    Input('url', 'pathname'),
-    Input('store-dataset', 'data'),
-)
 def route(pathname, dataset):
 
-    if dataset is None:
-        dataset = 'mq'
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
+
+    # Utilisez active_dataset pour toute la logique suivante
+    is_mq  = (active_dataset == 'mq')
+    is_act = (active_dataset == 'act')
+    is_ca  = (active_dataset == 'ca')
 
     dataset = dataset or 'mq'
     is_mq  = (dataset == 'mq')
