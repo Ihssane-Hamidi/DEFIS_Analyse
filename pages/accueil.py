@@ -104,7 +104,7 @@ def layout(ctx: dict):
         ]
     else:
         methodo_items = [
-            "Score CA100 : Performance Score /100 — évaluation de la trajectoire de décarbonation",,
+            "Score CA100 : Performance Score /100 — évaluation de la trajectoire de décarbonation",
             f"Quintiles : calculés sur le Performance Score, entreprises cotées uniquement ({avec} entreprises)",
             "Régression OLS : winsorisée au 1er–99ème percentile · erreurs robustes HC3",
             f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/total:.0%} du panel ACT)",
