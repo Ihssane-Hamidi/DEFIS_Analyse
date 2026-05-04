@@ -270,11 +270,24 @@ def topbar(page_name='Accueil', dataset_label='Management Quality', badge_class=
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    dcc.Store(id='store-dataset', data='mq', storage_type='local'),
-    dcc.Store(id='store-page',    data='accueil'),
-    html.Div(id='app-container'),
+    dcc.Store(id='store-dataset', storage_type='local'),
+    dcc.Store(id='store-page', data='accueil'),
+    html.Div(id='app-container', children=[
+        # écran neutre affiché avant le premier rendu
+        html.Div(
+            style={
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'height': '100vh',
+                'backgroundColor': '#0d1117',
+                'color': '#8b949e',
+                'fontSize': '13px',
+            },
+            children='Chargement...'
+        )
+    ]),
 ])
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CALLBACKS
