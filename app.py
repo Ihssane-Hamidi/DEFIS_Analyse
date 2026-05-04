@@ -203,7 +203,7 @@ def sidebar(username='', role='', display=''):
                         {'label': 'ACT', 'value': 'act'},
                         {'label': 'CA',  'value': 'ca'},
                     ],
-                    value=None,
+                    value='mq',
                     inline=True,
                     inputStyle={'display': 'none'},
                     labelStyle={
