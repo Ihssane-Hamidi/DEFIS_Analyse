@@ -15,6 +15,8 @@ from data import PERIODS_LABELS
 # ══════════════════════════════════════════════════════════════════════════════
 def layout(ctx: dict):
     is_mq       = ctx['is_mq']
+    is_ca       = ctx['is_ca']
+    is_act       = ctx['is_act']
     valid       = ctx['valid']
     company_col = 'Company Name'
 
@@ -108,7 +110,7 @@ def register_callbacks(app, data: dict):
             ('Secteur',   row.get(data['col_secteur_act'],'N/A')),
             ('Quintile',  row.get('Quintile_ACT',        'N/A')),
             ]
-        else:  # CA
+        else:  
             extra_items = [
             ('Secteur',  row.get(data['col_secteur_ca'], 'N/A')),
             ('Quintile', row.get(data['col_quintile_ca'],'N/A')),
