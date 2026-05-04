@@ -346,6 +346,8 @@ def route(pathname, dataset):
     ctx = {
         **APP_DATA,
         'is_mq':         is_mq,
+        'is_act':         is_act,
+        'is_ca':         is_ca,
         'valid':         valid,
         'prices':        prices,
         'score_col':     score_col,
