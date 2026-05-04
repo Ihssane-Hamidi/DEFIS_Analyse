@@ -306,6 +306,9 @@ def update_dataset_store(value):
     Input('store-dataset', 'data'),
 )
 def route(pathname, dataset):
+
+    if dataset is None:
+        return dash.no_update 
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
 
