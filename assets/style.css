@@ -1,0 +1,561 @@
+/* ── FONTS ─────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+/* ── RESET & BASE ───────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background-color: #010409;
+    color: #e6edf3;
+    font-size: 13px;
+}
+
+/* ── LAYOUT PRINCIPAL ───────────────────────────────────────────────────────── */
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ── SIDEBAR ────────────────────────────────────────────────────────────────── */
+.sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #0d1117;
+    border-right: 0.5px solid #21262d;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 18px 16px 14px;
+    border-bottom: 0.5px solid #21262d;
+}
+
+.logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.logo-text  { font-size: 13px; font-weight: 500; color: #e6edf3; }
+.logo-sub   { font-size: 10px; color: #6e7681; margin-top: 2px; }
+
+/* Dataset toggle */
+.ds-section {
+    padding: 12px 16px 4px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6e7681;
+}
+
+.ds-toggle {
+    margin: 4px 12px 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #161b22;
+    border: 0.5px solid #30363d;
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+}
+
+/* Navigation */
+.nav-section-label {
+    padding: 10px 16px 4px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6e7681;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #8b949e;
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+}
+
+.nav-link:hover {
+    color: #c9d1d9;
+    background: #161b22;
+}
+
+.nav-link.active {
+    color: #e6edf3;
+    background: #161b22;
+    border-left: 2px solid #1f6feb;
+}
+
+.nav-badge {
+    margin-left: auto;
+    font-size: 9px;
+    background: rgba(31,111,235,0.15);
+    color: #58a6ff;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+/* User footer */
+.sidebar-footer {
+    margin-top: auto;
+    border-top: 0.5px solid #21262d;
+    padding: 12px;
+}
+
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.user-name  { font-size: 12px; font-weight: 500; color: #e6edf3; }
+.user-role  { font-size: 10px; color: #6e7681; }
+
+.logout-btn {
+    margin-left: auto;
+    font-size: 11px;
+    color: #6e7681;
+    cursor: pointer;
+    padding: 4px 8px;
+    border: 0.5px solid #30363d;
+    border-radius: 5px;
+    background: transparent;
+    transition: all 0.15s;
+}
+.logout-btn:hover { color: #f85149; border-color: #f85149; }
+
+/* ── CONTENU PRINCIPAL ──────────────────────────────────────────────────────── */
+.main-content {
+    margin-left: 220px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Topbar */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 24px;
+    background: #0d1117;
+    border-bottom: 0.5px solid #21262d;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6e7681;
+}
+
+.breadcrumb-sep    { color: #30363d; }
+.breadcrumb-active { color: #e6edf3; font-weight: 500; }
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.period-group {
+    display: flex;
+    background: #161b22;
+    border: 0.5px solid #30363d;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.period-btn {
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+    color: #8b949e;
+    border-right: 0.5px solid #30363d;
+    background: transparent;
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+    transition: all 0.15s;
+}
+.period-btn:last-child { border-right: none; }
+.period-btn:hover      { color: #c9d1d9; background: #21262d; }
+.period-btn.active     { background: #1f6feb; color: #fff; font-weight: 500; }
+
+.export-btn {
+    font-size: 11px;
+    padding: 5px 14px;
+    background: #21262d;
+    border: 0.5px solid #30363d;
+    border-radius: 6px;
+    color: #c9d1d9;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.export-btn:hover { background: #30363d; }
+
+/* Zone de contenu */
+.page-content {
+    padding: 20px 24px;
+    flex: 1;
+}
+
+/* ── COMPOSANTS ─────────────────────────────────────────────────────────────── */
+
+/* KPI Cards */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.kpi-card {
+    background: #0d1117;
+    border: 0.5px solid #21262d;
+    border-radius: 8px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-accent {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+}
+
+.kpi-label {
+    font-size: 10px;
+    color: #6e7681;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.kpi-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.kpi-sub {
+    font-size: 10px;
+    color: #6e7681;
+    margin-top: 5px;
+}
+
+/* Cards génériques */
+.card {
+    background: #0d1117;
+    border: 0.5px solid #21262d;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 0.5px solid #21262d;
+}
+
+.card-title {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6e7681;
+}
+
+.card-tag {
+    font-size: 9px;
+    background: #1f2937;
+    color: #9ca3af;
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+.card-body { padding: 14px 16px; }
+
+/* Section titles (remplace st.markdown section-title) */
+.section-title {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6e7681;
+    margin: 20px 0 10px;
+    border-bottom: 0.5px solid #21262d;
+    padding-bottom: 6px;
+}
+
+/* Metric cards (OLS) */
+.metric-card {
+    background: #0d1117;
+    border: 0.5px solid #21262d;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+
+.metric-label {
+    font-size: 10px;
+    color: #6e7681;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.metric-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+/* Score badge */
+.score-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Note / warn boxes */
+.note-box {
+    background: #0f1a2e;
+    border: 1px solid #1e3a5f;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #93c5fd;
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.warn-box {
+    background: #1c1a0e;
+    border: 1px solid #713f12;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #fde68a;
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+/* Dataset badges */
+.dataset-badge-mq {
+    background: #1e3a5f;
+    color: #93c5fd;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.dataset-badge-act {
+    background: #1a3320;
+    color: #86efac;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Deltas */
+.delta-up { background: #1a3326; color: #3fb950; font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 500; }
+.delta-dn { background: #3d1a1a; color: #f85149; font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 500; }
+
+/* Valeurs positives / négatives dans les tableaux */
+.pos { color: #3fb950; font-family: 'IBM Plex Mono', monospace; }
+.neg { color: #f85149; font-family: 'IBM Plex Mono', monospace; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+/* Quintile badges */
+.qb {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    gap: 4px;
+}
+.q5 { background: #052e16; color: #3fb950; }
+.q4 { background: #0d2818; color: #56d364; }
+.q3 { background: #1c1c1c; color: #8b949e; }
+.q2 { background: #2d1a0a; color: #d29922; }
+.q1 { background: #3d0f0f; color: #f85149; }
+
+/* ── DASH TABLE ─────────────────────────────────────────────────────────────── */
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    background-color: #0d1117 !important;
+    color: #6e7681 !important;
+    font-size: 10px !important;
+    letter-spacing: 0.07em !important;
+    text-transform: uppercase !important;
+    border-bottom: 0.5px solid #21262d !important;
+    font-family: 'IBM Plex Sans', sans-serif !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td {
+    background-color: #0d1117 !important;
+    color: #c9d1d9 !important;
+    font-size: 12px !important;
+    border-bottom: 0.5px solid #161b22 !important;
+    font-family: 'IBM Plex Sans', sans-serif !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover td {
+    background-color: #161b22 !important;
+}
+
+/* ── LOGIN PAGE ─────────────────────────────────────────────────────────────── */
+.login-shell {
+    min-height: 100vh;
+    background: #010409;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: #0d1117;
+    border: 0.5px solid #21262d;
+    border-radius: 12px;
+    padding: 40px 36px;
+    width: 360px;
+}
+
+.login-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.login-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: #e6edf3;
+    margin-bottom: 6px;
+}
+
+.login-sub {
+    font-size: 12px;
+    color: #6e7681;
+    margin-bottom: 24px;
+}
+
+.login-label {
+    font-size: 11px;
+    color: #8b949e;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.login-input {
+    width: 100%;
+    background: #161b22;
+    border: 0.5px solid #30363d;
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: #e6edf3;
+    font-size: 13px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    margin-bottom: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.login-input:focus { border-color: #1f6feb; }
+
+.login-btn {
+    width: 100%;
+    background: #1f6feb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'IBM Plex Sans', sans-serif;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background 0.15s;
+}
+.login-btn:hover { background: #388bfd; }
+
+.login-error {
+    background: #3d0f0f;
+    border: 0.5px solid #f85149;
+    border-radius: 5px;
+    color: #f85149;
+    font-size: 12px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+}
+
+/* ── GRILLES ────────────────────────────────────────────────────────────────── */
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.row-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.row-17 { display: grid; grid-template-columns: 1.7fr 1fr; gap: 14px; }
+
+/* ── SCROLLBAR ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d1117; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #484f58; }
