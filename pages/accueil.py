@@ -13,12 +13,14 @@ from data import PERIODS_LABELS
 # ══════════════════════════════════════════════════════════════════════════════
 def layout(ctx: dict):
     is_mq       = ctx['is_mq']
+    is_ca       = ctx['is_ca']
+    is_act       = ctx['is_mq']
     valid       = ctx['valid']
     df_mq       = ctx['df_mq']
     df_act      = ctx['df_act']
     rallies     = ctx['rallies']
 
-    total   = len(df_mq)  if is_mq else len(df_act)
+    total = len(df_mq) if is_mq else (len(df_act) if is_act else len(df_ca))
     avec    = len(valid)
     avec_f  = (
         valid['MarketCap'].notna().sum()
@@ -28,9 +30,12 @@ def layout(ctx: dict):
     if is_mq:
         titre = "TPI Management Quality · Analyse Financière"
         sous  = "Édition 2025 · Données boursières 2023–2025"
-    else:
+    if is_act:
         titre = "ACT — Assessing low Carbon Transition · Analyse Financière"
         sous  = "Évaluation 2025 · Données boursières 2023–2025"
+    if is_ca:
+        titre = "CA — Climate Action 100+ · Analyse de Performance"
+        sous  = "Édition 2025 · Analyse des Métriques"
 
     # ── KPI cards ────────────────────────────────────────────────────────────
     kpis = [
@@ -85,7 +90,7 @@ def layout(ctx: dict):
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
         ]
-    else:
+    if is_act:
         methodo_items = [
             "Score ACT : Performance Score /100 — évaluation de la trajectoire de décarbonation",
             "Narrative Score : note A (meilleur) à E — évaluation qualitative",
@@ -97,6 +102,18 @@ def layout(ctx: dict):
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
         ]
+    else:
+        methodo_items = [
+            "Score CA100 : Performance Score /100 — évaluation de la trajectoire de décarbonation",,
+            f"Quintiles : calculés sur le Performance Score, entreprises cotées uniquement ({avec} entreprises)",
+            "Régression OLS : winsorisée au 1er–99ème percentile · erreurs robustes HC3",
+            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/total:.0%} du panel ACT)",
+            f"⚠ Note temporelle : scores issus de l'année fiscale 2023–2024, publiés en 2025. "
+             "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
+             "Le Rendement 2025 constitue le test prédictif de référence.",
+        ]
+
+        
 
     methodo = html.Div([
         html.Div('Méthodologie', className='section-title'),
@@ -159,10 +176,8 @@ def layout(ctx: dict):
         sub = valid_q[valid_q[q_col] == q]
         if sub.empty:
             continue
-        score_fmt = (
-            f"{sub[s_col].mean():.1%}"
-            if is_mq else f"{sub[s_col].mean():.1f}"
-        )
+        score_fmt = f"{sub[s_col].mean():.1f}%" if (is_mq or is_act) else f"{sub[s_col].mean() * 100:.1f}%"
+        
         rows_t.append({
             'Quintile':    q,
             'N':           len(sub),
