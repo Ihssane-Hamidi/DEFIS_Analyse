@@ -12,25 +12,39 @@ from data import PERIODS_LABELS
 # LAYOUT
 # ══════════════════════════════════════════════════════════════════════════════
 def layout(ctx: dict):
-    is_mq       = ctx['is_mq']
-    valid       = ctx['valid']
-    df_mq       = ctx['df_mq']
-    df_act      = ctx['df_act']
-    rallies     = ctx['rallies']
 
-    total   = len(df_mq)  if is_mq else len(df_act)
-    avec    = len(valid)
-    avec_f  = (
-        valid['MarketCap'].notna().sum()
-        if 'MarketCap' in valid.columns else 0
-    )
+    is_mq  = ctx.get('is_mq', False)
+    is_act = ctx.get('is_act', False)
+    is_ca  = ctx.get('is_ca', False)
+    
+    valid   = ctx['valid']
+    rallies = ctx['rallies']
+
+    if is_mq:
+        total = len(ctx['df_mq'])
+    elif is_act:
+        total = len(ctx['df_act'])
+    elif is_ca:
+        total = len(ctx['df_ca'])
+    else:
+        total = 0
+
+    avec   = len(valid)
+    avec_f = valid['MarketCap'].notna().sum() if 'MarketCap' in valid.columns else 0
+
 
     if is_mq:
         titre = "TPI Management Quality · Analyse Financière"
         sous  = "Édition 2025 · Données boursières 2023–2025"
-    else:
+    elif is_act:
         titre = "ACT — Assessing low Carbon Transition · Analyse Financière"
         sous  = "Évaluation 2025 · Données boursières 2023–2025"
+    elif is_ca:
+        titre = "CA — Chiffre d'Affaires · Analyse de Performance"
+        sous  = "Édition 2025 · Analyse des Métriques"
+    else:
+        titre = "Analyse Inconnue"
+        sous  = "Données non spécifiées"
 
     # ── KPI cards ────────────────────────────────────────────────────────────
     kpis = [
