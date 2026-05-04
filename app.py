@@ -273,7 +273,7 @@ app.layout = html.Div([
     dcc.Store(id='store-dataset', storage_type='local'),
     dcc.Store(id='store-page' ,data='accueil'),
     html.Div(id='app-container', children=[
-        # écran neutre affiché avant le premier rendu
+
         html.Div(
             style={
                 'display': 'flex',
@@ -308,7 +308,7 @@ def update_dataset_store(value):
 def route(pathname, dataset):
 
     if dataset is None:
-        return dash.no_update 
+        dataset = 'mq'
     if pathname in ('/', '/login', None):
         pathname = '/accueil'
 
