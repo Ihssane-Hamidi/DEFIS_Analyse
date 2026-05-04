@@ -18,6 +18,7 @@ def layout(ctx: dict):
     valid       = ctx['valid']
     df_mq       = ctx['df_mq']
     df_act      = ctx['df_act']
+    df_ca  = ctx['df_ca']
     rallies     = ctx['rallies']
 
     total = len(df_mq) if is_mq else (len(df_act) if is_act else len(df_ca))
