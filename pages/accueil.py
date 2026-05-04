@@ -14,7 +14,7 @@ from data import PERIODS_LABELS
 def layout(ctx: dict):
     is_mq       = ctx['is_mq']
     is_ca       = ctx['is_ca']
-    is_act       = ctx['is_mq']
+    is_act       = ctx['is_act']
     valid       = ctx['valid']
     df_mq       = ctx['df_mq']
     df_act      = ctx['df_act']
@@ -30,10 +30,10 @@ def layout(ctx: dict):
     if is_mq:
         titre = "TPI Management Quality · Analyse Financière"
         sous  = "Édition 2025 · Données boursières 2023–2025"
-    if is_act:
+    elif is_act:
         titre = "ACT — Assessing low Carbon Transition · Analyse Financière"
         sous  = "Évaluation 2025 · Données boursières 2023–2025"
-    if is_ca:
+    elif is_ca:
         titre = "CA — Climate Action 100+ · Analyse de Performance"
         sous  = "Édition 2025 · Analyse des Métriques"
 
@@ -90,7 +90,7 @@ def layout(ctx: dict):
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
         ]
-    if is_act:
+    elif is_act:
         methodo_items = [
             "Score ACT : Performance Score /100 — évaluation de la trajectoire de décarbonation",
             "Narrative Score : note A (meilleur) à E — évaluation qualitative",
