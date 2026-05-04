@@ -12,17 +12,17 @@ from data import PERIODS_LABELS
 # LAYOUT
 # ══════════════════════════════════════════════════════════════════════════════
 def layout(ctx: dict):
-    is_mq       = ctx['is_mq']
-    valid       = ctx['valid']
-    df_mq       = ctx['df_mq']
-    df_act      = ctx['df_act']
-    rallies     = ctx['rallies']
+   is_mq       = ctx['is_mq']
+   valid       = ctx['valid']
+   df_mq       = ctx['df_mq']
+   df_act      = ctx['df_act']
+   rallies     = ctx['rallies']
 
-    total   = len(df_mq)  if is_mq else len(df_act)
-    avec    = len(valid)
-    avec_f  = (
-        valid['MarketCap'].notna().sum()
-        if 'MarketCap' in valid.columns else 0
+   total   = len(df_mq)  if is_mq else len(df_act)
+   avec    = len(valid)
+   avec_f  = (
+       valid['MarketCap'].notna().sum()
+       if 'MarketCap' in valid.columns else 0
     )
 
     if is_mq:
