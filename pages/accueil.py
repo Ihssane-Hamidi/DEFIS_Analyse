@@ -1,6 +1,6 @@
 """
 pages/accueil.py — Page d'accueil
-TPI · Analyse Financière (Dash)
+DEFIS CARBON · Analyse Financière (Dash)
 """
 
 import pandas as pd
@@ -161,7 +161,9 @@ def layout(ctx: dict):
             continue
         if is_mq:
             score_fmt = f"{sub[s_col].mean():.1%}"
-        else:
+        if is_ca:
+            score_fmt = f"{(sub[s_col].mean() * 100):.1%}"
+        if is_act:
             score_fmt = f"{(sub[s_col].mean() / 100):.1%}"
 
         rows_t.append({
