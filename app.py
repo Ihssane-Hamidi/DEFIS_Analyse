@@ -81,21 +81,36 @@ def require_login():
 # ══════════════════════════════════════════════════════════════════════════════
 # CHARGEMENT DONNÉES (au démarrage)
 # ══════════════════════════════════════════════════════════════════════════════
+def _safe_brent(prices, valid, rallies):
+    if (valid is None or valid.empty
+            or prices is None or (hasattr(prices, 'empty') and prices.empty)
+            or not rallies
+            or 'ticker' not in valid.columns):
+        return {}, {}
+    tickers = valid['ticker'].dropna().str.strip().tolist()
+    if not tickers:
+        return {}, {}
+    return calc_metriques_brent(prices, tickers, rallies)
+    
 print("Chargement des données...")
 try:
-    # ── Chargement brut ───────────────────────────────────────────────────────
     df_mq      = load_mq()
     prices_mq  = load_mq_prix()
     df_act     = load_act()
     prices_act = load_act_prix()
     df_ca      = load_ca()
     prices_ca  = load_ca_prix()
-    df_cp      = load_cp()        # None si pas encore uploadé
-    prices_cp  = load_cp_prix()   # None si pas encore uploadé
+    df_cp      = load_cp()
+    prices_cp  = load_cp_prix()
     brent      = load_brent()
-    rallies    = detect_oil_rallies(brent)
 
-    # ── Filtrage valides ──────────────────────────────────────────────────────
+    # ⚠️ Protège detect_oil_rallies si brent est vide
+    if brent is not None and len(brent) > 0:
+        rallies = detect_oil_rallies(brent)
+    else:
+        print("Brent vide ou indisponible → rallies désactivés")
+        rallies = []
+
     valid_mq  = prepare_valid_mq(df_mq)
     valid_act = prepare_valid_act(df_act)
     valid_ca  = prepare_valid_ca(df_ca)
@@ -105,21 +120,10 @@ try:
           f"CA : {len(valid_ca)} · CP : {len(valid_cp)} · "
           f"Rallies Brent : {len(rallies)}")
 
-    # ── Cache métriques Brent ─────────────────────────────────────────────────
-    tickers_mq           = valid_mq['ticker'].dropna().str.strip().tolist()
-    rdt_b_mq, vol_b_mq  = calc_metriques_brent(prices_mq, tickers_mq, rallies)
-
-    tickers_act          = valid_act['ticker'].dropna().str.strip().tolist()
-    rdt_b_act, vol_b_act = calc_metriques_brent(prices_act, tickers_act, rallies)
-
-    tickers_ca           = valid_ca['ticker'].dropna().str.strip().tolist()
-    rdt_b_ca, vol_b_ca   = calc_metriques_brent(prices_ca, tickers_ca, rallies)
-
-    if not valid_cp.empty and prices_cp is not None:
-        tickers_cp          = valid_cp['ticker'].dropna().str.strip().tolist()
-        rdt_b_cp, vol_b_cp  = calc_metriques_brent(prices_cp, tickers_cp, rallies)
-    else:
-        rdt_b_cp, vol_b_cp  = {}, {}
+    rdt_b_mq,  vol_b_mq  = _safe_brent(prices_mq,  valid_mq,  rallies)
+    rdt_b_act, vol_b_act  = _safe_brent(prices_act, valid_act, rallies)
+    rdt_b_ca,  vol_b_ca   = _safe_brent(prices_ca,  valid_ca,  rallies)
+    rdt_b_cp,  vol_b_cp   = _safe_brent(prices_cp,  valid_cp,  rallies)
 
     print("Cache Brent OK")
 
