@@ -189,9 +189,9 @@ def layout(ctx: dict):
     s_col     = ctx['score_col']
     rows_t    = []
     if q_col not in valid_q.columns:
-    quintile_table = html.Div(
+        quintile_table = html.Div(
         html.Div("Aucune donnée disponible pour ce dataset.", className='note-box')
-    )
+        )
     else:
     for q in ['Q1', 'Q2', 'Q3', 'Q4', 'Q5']:
         sub = valid_q[valid_q[q_col] == q]
