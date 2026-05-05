@@ -26,7 +26,7 @@ PARQUET_FILES = {
     'act_prix': 'act_prix_journaliers.parquet',
     'ca_prix':  'ca_prix_journaliers.parquet',
     'cp_prix':  'cp_prix_journaliers.parquet',
-    'brent':    'brent_cache.parquet',
+    'brent':    'brent.parquet',
 }
 
 
