@@ -37,7 +37,7 @@ def parse_mq(
     Parse le fichier MQ TPI.
     Retourne (df, company_col, isin_col, score_col, quintile_col)
     """
-    df_raw = pd.read_excel(io.BytesIO(file_bytes), sheet_name=sheet_name, header=None)
+    df_raw = pd.read_excel(io.BytesIO(file_bytes), sheet_name=sheet_name, header=None, engine='openpyxl')
     df     = df_raw.iloc[2:].copy()
     df.columns = df_raw.iloc[1].values
     df     = df.reset_index(drop=True)
@@ -109,7 +109,7 @@ def parse_act(file_bytes: bytes) -> tuple[pd.DataFrame, str, str, str, str]:
     Parse le fichier ACT.
     Colonnes clés : Entreprise, ISIN, Secteur, Score global - Performance Score /100
     """
-    df = pd.read_excel(io.BytesIO(file_bytes))
+    df = pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
     _validate(df, 'act')
 
     score_col = 'Score global - Performance Score /100'
@@ -141,7 +141,7 @@ def parse_ca(
     """
     Parse le fichier CA avec header multi-lignes (lignes 8,9,10).
     """
-    df_raw = pd.read_excel(io.BytesIO(file_bytes), sheet_name=sheet_name, header=None)
+    df_raw = pd.read_excel(io.BytesIO(file_bytes), sheet_name=sheet_name, header=None, engine='openpyxl')
 
     # Reconstruction header
     row8  = df_raw.iloc[8].ffill()
