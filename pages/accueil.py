@@ -22,6 +22,7 @@ def layout(ctx: dict):
     rallies     = ctx['rallies']
 
     total = len(df_mq) if is_mq else (len(df_act) if is_act else len(df_ca))
+    safe_total = max(total, 1)
     avec    = len(valid)
     avec_f  = (
         valid['MarketCap'].notna().sum()
@@ -86,7 +87,7 @@ def layout(ctx: dict):
             f"Score MQ : moyenne des réponses Oui/Non aux 23 questions (Q1L0 → Q23L5)",
             f"Quintiles : calculés sur le score global continu, entreprises cotées uniquement ({avec} entreprises)",
             f"Régression OLS : winsorisée au 1er–99ème percentile · erreurs robustes HC3",
-            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/total:.0%} du panel TPI MQ)",
+            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/safe_total:.0%} du panel TPI MQ)",
             f"⚠ Note temporelle : scores issus de l'année fiscale 2023–2024, publiés en 2025. "
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
@@ -98,7 +99,7 @@ def layout(ctx: dict):
             "Trend Score : tendance +/=/− de la performance dans le temps",
             f"Quintiles : calculés sur le Performance Score, entreprises cotées uniquement ({avec} entreprises)",
             "Régression OLS : winsorisée au 1er–99ème percentile · erreurs robustes HC3",
-            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/total:.0%} du panel ACT)",
+            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/safe_total:.0%} du panel ACT)",
             f"⚠ Note temporelle : scores issus de l'année fiscale 2023–2024, publiés en 2025. "
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
@@ -108,7 +109,7 @@ def layout(ctx: dict):
             "Score CA100 : Performance Score /100 — évaluation de la trajectoire de décarbonation",
             f"Quintiles : calculés sur le Performance Score, entreprises cotées uniquement ({avec} entreprises)",
             "Régression OLS : winsorisée au 1er–99ème percentile · erreurs robustes HC3",
-            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/total:.0%} du panel ACT)",
+            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/safe_total:.0%} du panel ACT)",
             f"⚠ Note temporelle : scores issus de l'année fiscale 2023–2024, publiés en 2025. "
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
