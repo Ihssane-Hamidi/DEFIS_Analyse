@@ -81,65 +81,53 @@ def require_login():
 # ══════════════════════════════════════════════════════════════════════════════
 # CHARGEMENT DONNÉES (au démarrage)
 # ══════════════════════════════════════════════════════════════════════════════
-def _safe_brent(prices, valid, rallies):
-    if (valid is None or valid.empty
-            or prices is None or (hasattr(prices, 'empty') and prices.empty)
-            or not rallies
-            or 'ticker' not in valid.columns):
-        return {}, {}
-    tickers = valid['ticker'].dropna().str.strip().tolist()
-    if not tickers:
-        return {}, {}
-    return calc_metriques_brent(prices, tickers, rallies)
-    
 print("Chargement des données...")
-
-# Valeurs par défaut — l'app démarre même si tout est vide
-df_mq = df_act = df_ca = df_cp = pd.DataFrame()
-prices_mq = prices_act = prices_ca = prices_cp = pd.DataFrame()
-valid_mq = valid_act = valid_ca = valid_cp = pd.DataFrame()
-brent = pd.Series(dtype=float)
-rallies = []
-rdt_b_mq = vol_b_mq = {}
-rdt_b_act = vol_b_act = {}
-rdt_b_ca = vol_b_ca = {}
-rdt_b_cp = vol_b_cp = {}
-
 try:
-    df_mq      = load_mq();      df_mq      = pd.DataFrame() if df_mq      is None else df_mq
-    prices_mq  = load_mq_prix(); prices_mq  = pd.DataFrame() if prices_mq  is None else prices_mq
-    df_act     = load_act();     df_act     = pd.DataFrame() if df_act     is None else df_act
-    prices_act = load_act_prix();prices_act = pd.DataFrame() if prices_act is None else prices_act
-    df_ca      = load_ca();      df_ca      = pd.DataFrame() if df_ca      is None else df_ca
-    prices_ca  = load_ca_prix(); prices_ca  = pd.DataFrame() if prices_ca  is None else prices_ca
-    df_cp      = load_cp();      df_cp      = pd.DataFrame() if df_cp      is None else df_cp
-    prices_cp  = load_cp_prix(); prices_cp  = pd.DataFrame() if prices_cp  is None else prices_cp
+    # ── Chargement brut ───────────────────────────────────────────────────────
+    df_mq      = load_mq()
+    prices_mq  = load_mq_prix()
+    df_act     = load_act()
+    prices_act = load_act_prix()
+    df_ca      = load_ca()
+    prices_ca  = load_ca_prix()
+    df_cp      = load_cp()        # None si pas encore uploadé
+    prices_cp  = load_cp_prix()   # None si pas encore uploadé
+    brent      = load_brent()
+    rallies    = detect_oil_rallies(brent)
 
-    if isinstance(brent, pd.Series) and len(brent) > 0 and isinstance(brent.index, pd.DatetimeIndex):
-        rallies = detect_oil_rallies(brent)
-    else:
-        rallies = []
-
+    # ── Filtrage valides ──────────────────────────────────────────────────────
     valid_mq  = prepare_valid_mq(df_mq)
     valid_act = prepare_valid_act(df_act)
     valid_ca  = prepare_valid_ca(df_ca)
-    valid_cp  = prepare_valid_cp(df_cp) if not df_cp.empty else pd.DataFrame()
-
-    rdt_b_mq,  vol_b_mq  = _safe_brent(prices_mq,  valid_mq,  rallies)
-    rdt_b_act, vol_b_act  = _safe_brent(prices_act, valid_act, rallies)
-    rdt_b_ca,  vol_b_ca   = _safe_brent(prices_ca,  valid_ca,  rallies)
-    rdt_b_cp,  vol_b_cp   = _safe_brent(prices_cp,  valid_cp,  rallies)
+    valid_cp  = prepare_valid_cp(df_cp) if df_cp is not None else pd.DataFrame()
 
     print(f"MQ : {len(valid_mq)} · ACT : {len(valid_act)} · "
           f"CA : {len(valid_ca)} · CP : {len(valid_cp)} · "
-          f"Rallies : {len(rallies)}")
+          f"Rallies Brent : {len(rallies)}")
+
+    # ── Cache métriques Brent ─────────────────────────────────────────────────
+    tickers_mq           = valid_mq['ticker'].dropna().str.strip().tolist()
+    rdt_b_mq, vol_b_mq  = calc_metriques_brent(prices_mq, tickers_mq, rallies)
+
+    tickers_act          = valid_act['ticker'].dropna().str.strip().tolist()
+    rdt_b_act, vol_b_act = calc_metriques_brent(prices_act, tickers_act, rallies)
+
+    tickers_ca           = valid_ca['ticker'].dropna().str.strip().tolist()
+    rdt_b_ca, vol_b_ca   = calc_metriques_brent(prices_ca, tickers_ca, rallies)
+
+    if not valid_cp.empty and prices_cp is not None:
+        tickers_cp          = valid_cp['ticker'].dropna().str.strip().tolist()
+        rdt_b_cp, vol_b_cp  = calc_metriques_brent(prices_cp, tickers_cp, rallies)
+    else:
+        rdt_b_cp, vol_b_cp  = {}, {}
+
     print("Cache Brent OK")
 
 except Exception as e:
     import traceback
-    print("⚠️ ERREUR CHARGEMENT DONNÉES (app continue avec données vides) :")
-    traceback.print_exc() 
-    # On ne raise pas — l'app démarre quand même
+    traceback.print_exc()
+    raise
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # COLONNES DYNAMIQUES
@@ -570,13 +558,8 @@ def debug():
     return '<br>'.join(lines)
 
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # LANCEMENT
 # ══════════════════════════════════════════════════════════════════════════════
-@server.route('/ping')
-def ping():
-    return 'ok', 200
-    
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
