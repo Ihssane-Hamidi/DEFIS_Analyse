@@ -50,7 +50,7 @@ def layout(ctx: dict):
         {
             'label': 'Avec données boursières',
             'value': f"{avec:,}",
-            'sub':   f"{avec/total:.0%} du panel",
+            'sub': f"{avec/total:.0%} du panel" if total > 0 else "0 entreprise",
             'color': '#3fb950',
             'accent':'linear-gradient(90deg,#059669,#10b981)',
         },
