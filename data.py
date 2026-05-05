@@ -1,35 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 27 00:41:37 2026
-
-@author: hamidi
-"""
-
-
-"""
 data.py — Chargement et constantes
 TPI · Analyse Financière (Dash)
 """
 
 import os
-import requests
+import io
 import pandas as pd
 from functools import lru_cache
-
-
-# ── CHEMINS ───────────────────────────────────────────────────────────────────
-BASE_DIR           = os.path.dirname(os.path.abspath(__file__))
-LOCAL_DIR          = '/Users/hamidi/Desktop/tpi_dash'
-GITHUB_RELEASE_URL = "https://github.com/Ihssane-Hamidi/DEFIS_Analyse/releases/download/v1.0/"
-FILES = {
-    'mq_metriques':  'mq2_metriques.parquet',
-    'mq_prix':       'mq2_prix_journaliers.parquet',
-    'act_metriques': 'act_metriques.parquet',
-    'act_prix':      'act_prix_journaliers.parquet',
-    'ca_metriques':  'CA_metriques.parquet',    # ← ajoute
-    'ca_prix':       'CA_prix_journaliers.parquet',  # ← ajoute
-}
 
 # ── CONSTANTES ────────────────────────────────────────────────────────────────
 PERIODS_LABELS = {
@@ -54,135 +33,134 @@ PLOTLY_LAYOUT = dict(
     margin=dict(l=0, r=0, t=30, b=0),
 )
 
-# ── TÉLÉCHARGEMENT ────────────────────────────────────────────────────────────
-def get_parquet(key):
-    filename = FILES[key]
+# ── CHEMINS LOCAL (dev Mac uniquement) ────────────────────────────────────────
+LOCAL_DIR = '/Users/hamidi/Desktop/tpi_dash'
 
-    # 1. Local Mac
-    local = os.path.join(LOCAL_DIR, filename)
-    if os.path.exists(local):
-        return local
+LOCAL_FILES = {
+    'mq':      'mq2_metriques.parquet',
+    'mq_prix': 'mq2_prix_journaliers.parquet',
+    'act':     'act_metriques.parquet',
+    'act_prix':'act_prix_journaliers.parquet',
+    'ca':      'CA_metriques.parquet',
+    'ca_prix': 'CA_prix_journaliers.parquet',
+    'cp':      'cp_metriques.parquet',
+    'cp_prix': 'cp_prix_journaliers.parquet',
+    'brent':   'brent.parquet',
+}
 
-    # 2. Dossier data/ dans le repo (Render)
-    project_data = os.path.join(BASE_DIR, 'data', filename)
-    if os.path.exists(project_data):
-        return project_data
 
-    # 3. /tmp déjà téléchargé
-    tmp_path = os.path.join('/tmp', filename)
-    if os.path.exists(tmp_path):
-        return tmp_path
+# ══════════════════════════════════════════════════════════════════════════════
+# CHARGEMENT UNIFIÉ : Local (dev) → Drive (prod)
+# ══════════════════════════════════════════════════════════════════════════════
 
-    # 4. Téléchargement → /tmp
-    url = GITHUB_RELEASE_URL + filename
-    print(f"Téléchargement {filename}...")
-    r = requests.get(url, stream=True, timeout=120)
-    r.raise_for_status()
-    with open(tmp_path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=65536):
-            f.write(chunk)
-    return tmp_path
+def _load_df(key: str, is_prix: bool = False) -> pd.DataFrame | None:
+    """
+    Charge un parquet :
+    - En dev  : depuis LOCAL_DIR si le fichier existe
+    - En prod : depuis Google Drive via pipeline.drive
+    Retourne None si non trouvé (dataset pas encore généré).
+    """
+    # ── Dev local ─────────────────────────────────────────────────────────
+    filename = LOCAL_FILES.get(key)
+    if filename:
+        local_path = os.path.join(LOCAL_DIR, filename)
+        if os.path.exists(local_path):
+            df = pd.read_parquet(local_path)
+            if is_prix:
+                df.index = pd.to_datetime(df.index)
+            return df
 
-# ── CHARGEMENT (mis en cache) ─────────────────────────────────────────────────
-@lru_cache(maxsize=None)
-def load_ca():
-    return pd.read_parquet(get_parquet('ca_metriques'))
-
-@lru_cache(maxsize=None)
-def load_ca_prix():
-    df = pd.read_parquet(get_parquet('ca_prix'))
-    df.index = pd.to_datetime(df.index)
-    return df
-
-def prepare_valid_ca(df_ca):
-    col_nom = df_ca.columns[0]
-    valid = df_ca[
-        df_ca['ticker'].notna() &
-        (df_ca['ticker'] != 'None') &
-        df_ca['Rendement_2023_2025'].notna()
-    ].copy()
-    valid = valid.rename(columns={col_nom: 'Company Name'})
-    return valid
-@lru_cache(maxsize=None)
-def load_mq():
-    return pd.read_parquet(get_parquet('mq_metriques'))
-
-@lru_cache(maxsize=None)
-def load_mq_prix():
-    df = pd.read_parquet(get_parquet('mq_prix'))
-    df.index = pd.to_datetime(df.index)
-    return df
-
-@lru_cache(maxsize=None)
-def load_act():
-    return pd.read_parquet(get_parquet('act_metriques'))
-
-@lru_cache(maxsize=None)
-def load_act_prix():
-    df = pd.read_parquet(get_parquet('act_prix'))
-    df.index = pd.to_datetime(df.index)
-    return df
-
-@lru_cache(maxsize=None)
-def load_brent():
-    filename = 'brent.parquet'
-    
-    # 1. Test Local Mac
-    local = os.path.join(LOCAL_DIR, filename)
-    if os.path.exists(local):
-        df = pd.read_parquet(local)
-        return df['Close']
-
-    # 2. Test Dossier data/ (Render)
-    project_data = os.path.join(BASE_DIR, 'data', filename)
-    if os.path.exists(project_data):
-        df = pd.read_parquet(project_data)
-        return df['Close']
-
-    # 3. Test Racine (au cas où)
-    root_data = os.path.join(BASE_DIR, filename)
-    if os.path.exists(root_data):
-        df = pd.read_parquet(root_data)
-        return df['Close']
-
-    # 4. Fallback : Téléchargement (si les deux autres échouent)
+    # ── Prod : Google Drive ───────────────────────────────────────────────
     try:
-        url = GITHUB_RELEASE_URL + filename
-        print(f"Téléchargement {filename} depuis GitHub...")
-        r = requests.get(url, timeout=30)
-        r.raise_for_status()
-        tmp_path = os.path.join('/tmp', filename)
-        with open(tmp_path, 'wb') as f:
-            f.write(r.content)
-        df = pd.read_parquet(tmp_path)
+        from pipeline.drive import load_parquet
+        df = load_parquet(key)
+        if df is not None and is_prix:
+            df.index = pd.to_datetime(df.index)
+        return df
+    except Exception as e:
+        print(f"[data._load_df] Erreur chargement '{key}' depuis Drive : {e}")
+        return None
+
+
+# ── LOADERS PAR DATASET ───────────────────────────────────────────────────────
+# Note : pas de @lru_cache ici pour permettre le hot-reload
+#        après qu'un admin uploade un nouveau parquet.
+#        Le cache est géré au niveau de APP_DATA dans app.py.
+
+def load_mq():       return _load_df('mq')
+def load_mq_prix():  return _load_df('mq_prix',  is_prix=True)
+def load_act():      return _load_df('act')
+def load_act_prix(): return _load_df('act_prix', is_prix=True)
+def load_ca():       return _load_df('ca')
+def load_ca_prix():  return _load_df('ca_prix',  is_prix=True)
+def load_cp():       return _load_df('cp')
+def load_cp_prix():  return _load_df('cp_prix',  is_prix=True)
+
+
+def load_brent() -> pd.Series:
+    """Charge le Brent. Fallback yfinance si introuvable."""
+    # Dev local
+    local_path = os.path.join(LOCAL_DIR, 'brent.parquet')
+    if os.path.exists(local_path):
+        return pd.read_parquet(local_path)['Close']
+
+    # Drive
+    try:
+        from pipeline.drive import load_parquet
+        df = load_parquet('brent')
+        if df is not None:
+            return df['Close']
+    except Exception:
+        pass
+
+    # Fallback live yfinance
+    try:
+        import yfinance as yf
+        print("Brent non trouvé → téléchargement live yfinance...")
+        df = yf.download('BZ=F', start='2022-01-01', auto_adjust=True, progress=False)
         return df['Close']
     except Exception as e:
-        print(f"ERREUR : Impossible de trouver ou télécharger {filename} : {e}")
+        print(f"[load_brent] Erreur fallback yfinance : {e}")
         return pd.Series(dtype=float)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# PRÉPARATION DES DATAFRAMES VALIDES
+# ══════════════════════════════════════════════════════════════════════════════
 
+def _prepare_valid(df: pd.DataFrame, company_col: str) -> pd.DataFrame:
+    """
+    Filtre les entreprises avec ticker + données financières.
+    Normalise le nom de la colonne entreprise en 'Company Name'.
+    Détecte dynamiquement la colonne de rendement long terme disponible.
+    """
+    if df is None:
+        return pd.DataFrame()
 
+    # Colonne rendement long terme (flexible selon les années uploadées)
+    rdt_cols = [c for c in df.columns if c.startswith('Rendement_') and '_' in c.replace('Rendement_', '')]
+    rdt_col  = rdt_cols[-1] if rdt_cols else None  # prend le plus long par ordre alpha
 
-# ── PRÉPARATION DES DATAFRAMES ────────────────────────────────────────────────
-def prepare_valid_mq(df_mq):
-    """Filtre et renomme le DataFrame MQ."""
-    valid = df_mq[
-        df_mq['ticker'].notna() &
-        (df_mq['ticker'] != 'None') &
-        df_mq['Rendement_2023_2025'].notna()
-    ].copy()
-    if 'Company Name' not in valid.columns:
-        valid = valid.rename(columns={valid.columns[0]: 'Company Name'})
+    mask = df['ticker'].notna() & (df['ticker'].astype(str) != 'None')
+    if rdt_col:
+        mask = mask & df[rdt_col].notna()
+
+    valid = df[mask].copy()
+
+    if company_col in valid.columns and company_col != 'Company Name':
+        valid = valid.rename(columns={company_col: 'Company Name'})
+
     return valid
+
+
+def prepare_valid_mq(df_mq):
+    return _prepare_valid(df_mq, 'Company Name')
 
 def prepare_valid_act(df_act):
-    """Filtre et renomme le DataFrame ACT."""
-    col_nom = df_act.columns[0]
-    valid = df_act[
-        df_act['ticker'].notna() &
-        (df_act['ticker'] != 'None') &
-        df_act['Rendement_2023_2025'].notna()
-    ].copy()
-    valid = valid.rename(columns={col_nom: 'Company Name'})
-    return valid
+    return _prepare_valid(df_act, 'Entreprise')
+
+def prepare_valid_ca(df_ca):
+    return _prepare_valid(df_ca, 'Company name')
+
+def prepare_valid_cp(df_cp):
+    return _prepare_valid(df_cp, 'Company Name')
