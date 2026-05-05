@@ -9,7 +9,7 @@ import os
 import io
 import pandas as pd
 from functools import lru_cache
-from drive import load_parquet
+from pipeline.drive import load_parquet
 
 # ── CONSTANTES ────────────────────────────────────────────────────────────────
 PERIODS_LABELS = {
