@@ -15,6 +15,7 @@ def layout(ctx: dict):
     is_mq       = ctx['is_mq']
     is_ca       = ctx['is_ca']
     is_act       = ctx['is_act']
+    is_cp  = ctx['is_cp'] 
     valid       = ctx['valid']
     df_mq       = ctx['df_mq']
     df_act      = ctx['df_act']
