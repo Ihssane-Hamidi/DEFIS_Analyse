@@ -31,13 +31,17 @@ def layout(ctx: dict):
 
     if is_mq:
         titre = "TPI Management Quality · Analyse Financière"
-        sous  = "Édition 2025 · Données boursières 2023–2025"
+        
     elif is_act:
         titre = "ACT — Assessing low Carbon Transition · Analyse Financière"
-        sous  = "Évaluation 2025 · Données boursières 2023–2025"
+        
     elif is_ca:
-        titre = "CA — Climate Action 100+ · Analyse de Performance"
-        sous  = "Édition 2025 · Analyse des Métriques"
+        titre = "CA — Climate Action 100+ · Analyse Financière"
+        
+    elif is_cp:
+        titre = "CP — Carbon Performance TPI · Analyse Financière"
+       
+        
 
     # ── KPI cards ────────────────────────────────────────────────────────────
     kpis = [
@@ -104,7 +108,7 @@ def layout(ctx: dict):
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
         ]
-    else:
+    elif is_ca:
         methodo_items = [
             "Score CA100 : Performance Score /100 — évaluation de la trajectoire de décarbonation",
             f"Quintiles : calculés sur le Performance Score, entreprises cotées uniquement ({avec} entreprises)",
@@ -114,6 +118,17 @@ def layout(ctx: dict):
              "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
              "Le Rendement 2025 constitue le test prédictif de référence.",
         ]
+    else:
+        methodo_items = [
+            "Score CP : Performance Score /100 — évaluation de la trajectoire de décarbonation",
+            f"Quintiles : calculés sur le Performance Score, entreprises cotées uniquement ({avec} entreprises)",
+            "Régression OLS : winsorisée au 1er–99ème percentile · erreurs robustes HC3",
+            f"⚠ Biais de sélection : analyse limitée aux entreprises cotées ({avec/safe_total:.0%} du panel ACT)",
+            f"⚠ Note temporelle : scores issus de l'année fiscale 2023–2024, publiés en 2025. "
+             "Les régressions sur Rendement 2023 et 2024 ont une valeur descriptive uniquement. "
+             "Le Rendement 2025 constitue le test prédictif de référence.",
+        ]
+        
 
         
 
@@ -173,7 +188,11 @@ def layout(ctx: dict):
     q_col     = ctx['quintile_col']
     s_col     = ctx['score_col']
     rows_t    = []
-
+    if q_col not in valid_q.columns:
+    quintile_table = html.Div(
+        html.Div("Aucune donnée disponible pour ce dataset.", className='note-box')
+    )
+    else:
     for q in ['Q1', 'Q2', 'Q3', 'Q4', 'Q5']:
         sub = valid_q[valid_q[q_col] == q]
         if sub.empty:
