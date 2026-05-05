@@ -106,15 +106,14 @@ rdt_b_ca = vol_b_ca = {}
 rdt_b_cp = vol_b_cp = {}
 
 try:
-    df_mq     = load_mq()     or pd.DataFrame()
-    prices_mq = load_mq_prix() or pd.DataFrame()
-    df_act     = load_act()     or pd.DataFrame()
-    prices_act = load_act_prix() or pd.DataFrame()
-    df_ca      = load_ca()      or pd.DataFrame()
-    prices_ca  = load_ca_prix()  or pd.DataFrame()
-    df_cp      = load_cp()      or pd.DataFrame()
-    prices_cp  = load_cp_prix()  or pd.DataFrame()
-    brent      = load_brent()
+    df_mq      = load_mq();      df_mq      = pd.DataFrame() if df_mq      is None else df_mq
+    prices_mq  = load_mq_prix(); prices_mq  = pd.DataFrame() if prices_mq  is None else prices_mq
+    df_act     = load_act();     df_act     = pd.DataFrame() if df_act     is None else df_act
+    prices_act = load_act_prix();prices_act = pd.DataFrame() if prices_act is None else prices_act
+    df_ca      = load_ca();      df_ca      = pd.DataFrame() if df_ca      is None else df_ca
+    prices_ca  = load_ca_prix(); prices_ca  = pd.DataFrame() if prices_ca  is None else prices_ca
+    df_cp      = load_cp();      df_cp      = pd.DataFrame() if df_cp      is None else df_cp
+    prices_cp  = load_cp_prix(); prices_cp  = pd.DataFrame() if prices_cp  is None else prices_cp
 
     if isinstance(brent, pd.Series) and len(brent) > 0 and isinstance(brent.index, pd.DatetimeIndex):
         rallies = detect_oil_rallies(brent)
@@ -139,7 +138,7 @@ try:
 except Exception as e:
     import traceback
     print("⚠️ ERREUR CHARGEMENT DONNÉES (app continue avec données vides) :")
-    traceback.print_exc()
+    traceback.print_exc() 
     # On ne raise pas — l'app démarre quand même
 
 # ══════════════════════════════════════════════════════════════════════════════
