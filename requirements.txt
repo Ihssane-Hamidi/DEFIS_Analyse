@@ -15,3 +15,4 @@ yfinance
 yahooquery
 pydrive2
 oauth2client
+openpyxl
