@@ -19,6 +19,7 @@ import statsmodels.formula.api as smf
 # ── BRENT ─────────────────────────────────────────────────────────────────────
 def detect_oil_rallies(brent, threshold=0.15, window=60):
     # Garde : Series vide ou index non-datetime
+    prices   = brent
     if prices is None or len(prices) == 0:
         return []
     if not isinstance(prices.index, pd.DatetimeIndex):
@@ -29,7 +30,6 @@ def detect_oil_rallies(brent, threshold=0.15, window=60):
     if len(prices) == 0:
         return []
     """Détecte les périodes de hausse du Brent (seuil +15% sur 60j)."""
-    prices   = brent.dropna()
     roll_ret = prices.pct_change(window)
     rallies, in_rally = [], False
     rally_start = peak_price = peak_date = None
