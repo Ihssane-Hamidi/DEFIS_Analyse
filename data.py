@@ -37,12 +37,12 @@ PLOTLY_LAYOUT = dict(
 LOCAL_DIR = '/Users/hamidi/Desktop/tpi_dash'
 
 LOCAL_FILES = {
-    'mq':      'mq2_metriques.parquet',
-    'mq_prix': 'mq2_prix_journaliers.parquet',
+    'mq':      'mq_metriques.parquet',
+    'mq_prix': 'mq_prix_journaliers.parquet',
     'act':     'act_metriques.parquet',
     'act_prix':'act_prix_journaliers.parquet',
-    'ca':      'CA_metriques.parquet',
-    'ca_prix': 'CA_prix_journaliers.parquet',
+    'ca':      'ca_metriques.parquet',
+    'ca_prix': 'ca_prix_journaliers.parquet',
     'cp':      'cp_metriques.parquet',
     'cp_prix': 'cp_prix_journaliers.parquet',
     'brent':   'brent.parquet',
@@ -56,8 +56,8 @@ LOCAL_FILES = {
 def _load_df(key: str, is_prix: bool = False) -> pd.DataFrame | None:
     """
     Charge un parquet :
-    - En dev  : depuis LOCAL_DIR si le fichier existe
-    - En prod : depuis Google Drive via pipeline.drive
+    - dev  : depuis LOCAL_DIR si le fichier existe
+    - prod : depuis Google Drive via pipeline.drive
     Retourne None si non trouvé (dataset pas encore généré).
     """
     # ── Dev local ─────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ def _load_df(key: str, is_prix: bool = False) -> pd.DataFrame | None:
 
 # ── LOADERS PAR DATASET ───────────────────────────────────────────────────────
 # Note : pas de @lru_cache ici pour permettre le hot-reload
-#        après qu'un admin uploade un nouveau parquet.
+#         admin uploade un nouveau parquet.
 #        Le cache est géré au niveau de APP_DATA dans app.py.
 
 def load_mq():       return _load_df('mq')
@@ -107,7 +107,7 @@ def load_brent() -> pd.Series:
     # Drive
     try:
         from pipeline.drive import load_parquet
-        df = load_parquet('brent')
+        df = load_parquet('brent.parquet')
         if df is not None:
             return df['Close']
     except Exception:
