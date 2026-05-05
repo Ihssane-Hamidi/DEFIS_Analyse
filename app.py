@@ -93,45 +93,54 @@ def _safe_brent(prices, valid, rallies):
     return calc_metriques_brent(prices, tickers, rallies)
     
 print("Chargement des données...")
+
+# Valeurs par défaut — l'app démarre même si tout est vide
+df_mq = df_act = df_ca = df_cp = pd.DataFrame()
+prices_mq = prices_act = prices_ca = prices_cp = pd.DataFrame()
+valid_mq = valid_act = valid_ca = valid_cp = pd.DataFrame()
+brent = pd.Series(dtype=float)
+rallies = []
+rdt_b_mq = vol_b_mq = {}
+rdt_b_act = vol_b_act = {}
+rdt_b_ca = vol_b_ca = {}
+rdt_b_cp = vol_b_cp = {}
+
 try:
-    df_mq      = load_mq()
-    prices_mq  = load_mq_prix()
-    df_act     = load_act()
-    prices_act = load_act_prix()
-    df_ca      = load_ca()
-    prices_ca  = load_ca_prix()
-    df_cp      = load_cp()
-    prices_cp  = load_cp_prix()
+    df_mq     = load_mq()     or pd.DataFrame()
+    prices_mq = load_mq_prix() or pd.DataFrame()
+    df_act     = load_act()     or pd.DataFrame()
+    prices_act = load_act_prix() or pd.DataFrame()
+    df_ca      = load_ca()      or pd.DataFrame()
+    prices_ca  = load_ca_prix()  or pd.DataFrame()
+    df_cp      = load_cp()      or pd.DataFrame()
+    prices_cp  = load_cp_prix()  or pd.DataFrame()
     brent      = load_brent()
 
-    # ⚠️ Protège detect_oil_rallies si brent est vide
-    if brent is not None and len(brent) > 0:
+    if isinstance(brent, pd.Series) and len(brent) > 0 and isinstance(brent.index, pd.DatetimeIndex):
         rallies = detect_oil_rallies(brent)
     else:
-        print("Brent vide ou indisponible → rallies désactivés")
         rallies = []
 
     valid_mq  = prepare_valid_mq(df_mq)
     valid_act = prepare_valid_act(df_act)
     valid_ca  = prepare_valid_ca(df_ca)
-    valid_cp  = prepare_valid_cp(df_cp) if df_cp is not None else pd.DataFrame()
-
-    print(f"MQ : {len(valid_mq)} · ACT : {len(valid_act)} · "
-          f"CA : {len(valid_ca)} · CP : {len(valid_cp)} · "
-          f"Rallies Brent : {len(rallies)}")
+    valid_cp  = prepare_valid_cp(df_cp) if not df_cp.empty else pd.DataFrame()
 
     rdt_b_mq,  vol_b_mq  = _safe_brent(prices_mq,  valid_mq,  rallies)
     rdt_b_act, vol_b_act  = _safe_brent(prices_act, valid_act, rallies)
     rdt_b_ca,  vol_b_ca   = _safe_brent(prices_ca,  valid_ca,  rallies)
     rdt_b_cp,  vol_b_cp   = _safe_brent(prices_cp,  valid_cp,  rallies)
 
+    print(f"MQ : {len(valid_mq)} · ACT : {len(valid_act)} · "
+          f"CA : {len(valid_ca)} · CP : {len(valid_cp)} · "
+          f"Rallies : {len(rallies)}")
     print("Cache Brent OK")
 
 except Exception as e:
     import traceback
+    print("⚠️ ERREUR CHARGEMENT DONNÉES (app continue avec données vides) :")
     traceback.print_exc()
-    raise
-
+    # On ne raise pas — l'app démarre quand même
 
 # ══════════════════════════════════════════════════════════════════════════════
 # COLONNES DYNAMIQUES
@@ -566,5 +575,9 @@ def debug():
 # ══════════════════════════════════════════════════════════════════════════════
 # LANCEMENT
 # ══════════════════════════════════════════════════════════════════════════════
+@server.route('/ping')
+def ping():
+    return 'ok', 200
+    
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
