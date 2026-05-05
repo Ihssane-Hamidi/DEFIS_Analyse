@@ -11,3 +11,7 @@ numpy
 plotly
 requests
 patsy
+yfinance
+yahooquery
+pydrive2
+oauth2client
