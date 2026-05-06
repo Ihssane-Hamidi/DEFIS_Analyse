@@ -10,7 +10,7 @@ from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     current_user,
 )
-
+import traceback
 from data import (
     load_mq, load_mq_prix, load_act, load_act_prix,
     load_ca, load_ca_prix,
