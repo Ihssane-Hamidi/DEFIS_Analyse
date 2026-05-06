@@ -95,7 +95,8 @@ def load_ca_prix():
     df = pd.read_parquet(get_parquet('ca_prix'))
     df.index = pd.to_datetime(df.index)
     return df
-
+    
+@lru_cache(maxsize=None)
 def prepare_valid_ca(df_ca):
     col_nom = df_ca.columns[0]
     valid = df_ca[
@@ -116,15 +117,7 @@ def load_cp_prix():
     df.index = pd.to_datetime(df.index)
     return df
 
-def prepare_valid_cp(df_cp):
-    col_nom = df_cp.columns[0]
-    valid = df_cp[
-        df_cp['ticker'].notna() &
-        (df_cp['ticker'] != 'None') &
-        df_cp['Rendement_2023_2025'].notna()
-    ].copy()
-    valid = valid.rename(columns={col_nom: 'Company Name'})
-    return valid
+
     
 @lru_cache(maxsize=None)
 def load_mq():
@@ -206,6 +199,16 @@ def prepare_valid_act(df_act):
         df_act['ticker'].notna() &
         (df_act['ticker'] != 'None') &
         df_act['Rendement_2023_2025'].notna()
+    ].copy()
+    valid = valid.rename(columns={col_nom: 'Company Name'})
+    return valid
+    
+def prepare_valid_cp(df_cp):
+    col_nom = df_cp.columns[0]
+    valid = df_cp[
+        df_cp['ticker'].notna() &
+        (df_cp['ticker'] != 'None') &
+        df_cp['Rendement_2023_2025'].notna()
     ].copy()
     valid = valid.rename(columns={col_nom: 'Company Name'})
     return valid
