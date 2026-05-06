@@ -275,7 +275,7 @@ def sidebar(username='', role='', display=''):
             html.Div(className='logo-row', children=[
                 html.Div('T', className='logo-mark'),
                 html.Div([
-                    html.Div('TPI · Finance', className='logo-text'),
+                    html.Div('DEFIS · Finance', className='logo-text'),
                     html.Div('Analyse 2025',  className='logo-sub'),
                 ]),
             ]),
