@@ -1,0 +1,13 @@
+dash
+dash-bootstrap-components
+pandas
+pyarrow
+gunicorn
+flask
+flask-login
+statsmodels
+scipy
+numpy
+plotly
+requests
+patsy
