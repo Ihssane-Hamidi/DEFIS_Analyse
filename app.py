@@ -127,7 +127,7 @@ df_ca     = _load_safe(load_ca,       'load_ca')
 prices_ca = _load_safe(load_ca_prix,  'load_ca_prix') 
 df_cp     = _load_safe(load_cp,       'load_cp')      
 prices_cp = _load_safe(load_cp_prix,  'load_cp_prix')
-brent     = _load_safe(load_brent,    'load_brent')   or pd.Series(dtype=float)
+brent     = _load_safe(load_brent,    'load_brent')   
 
 rallies = []
 if isinstance(brent, pd.Series) and len(brent) > 0 and isinstance(brent.index, pd.DatetimeIndex):
