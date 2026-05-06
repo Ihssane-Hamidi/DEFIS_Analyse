@@ -241,7 +241,7 @@ NAV_ITEMS = [
 
 
 def sidebar(username='', role='', display=''):
-    initials = ''.join([p[0].upper() for p in display.split()[:2]]) if display else 'TPI'
+    initials = ''.join([p[0].upper() for p in display.split()[:2]]) if display else 'DEFIS CARBON'
     is_admin = (role == 'Admin')
 
     nav_links = []
@@ -326,7 +326,7 @@ def sidebar(username='', role='', display=''):
 def topbar(page_name, dataset_label, badge_class):
     return html.Div(className='topbar', children=[
         html.Div(className='breadcrumb', children=[
-            html.Span('DEFIS', className='breadcrumb-root'),
+            html.Span('Benchmark', className='breadcrumb-root'),
             html.Span('/', className='breadcrumb-sep'),
             html.Span(dataset_label, id='breadcrumb-dataset'),
             html.Span('/', className='breadcrumb-sep'),
@@ -354,7 +354,7 @@ app.layout = html.Div([
     Input('radio-dataset', 'value'),
 )
 def update_dataset_store(value):
-    return value or 'mq'
+    return value 
 
 
 @app.callback(
