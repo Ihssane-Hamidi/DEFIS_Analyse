@@ -119,14 +119,14 @@ def _load_safe(fn, label):
 
 print("Chargement des données...")
 
-df_mq     = _load_safe(load_mq,       'load_mq')      or pd.DataFrame()
-prices_mq = _load_safe(load_mq_prix,  'load_mq_prix') or pd.DataFrame()
-df_act    = _load_safe(load_act,      'load_act')     or pd.DataFrame()
-prices_act= _load_safe(load_act_prix, 'load_act_prix')or pd.DataFrame()
-df_ca     = _load_safe(load_ca,       'load_ca')      or pd.DataFrame()
-prices_ca = _load_safe(load_ca_prix,  'load_ca_prix') or pd.DataFrame()
-df_cp     = _load_safe(load_cp,       'load_cp')      or pd.DataFrame()
-prices_cp = _load_safe(load_cp_prix,  'load_cp_prix') or pd.DataFrame()
+df_mq     = _load_safe(load_mq,       'load_mq')      
+prices_mq = _load_safe(load_mq_prix,  'load_mq_prix') 
+df_act    = _load_safe(load_act,      'load_act')    
+prices_act= _load_safe(load_act_prix, 'load_act_prix')
+df_ca     = _load_safe(load_ca,       'load_ca')     
+prices_ca = _load_safe(load_ca_prix,  'load_ca_prix') 
+df_cp     = _load_safe(load_cp,       'load_cp')      
+prices_cp = _load_safe(load_cp_prix,  'load_cp_prix')
 brent     = _load_safe(load_brent,    'load_brent')   or pd.Series(dtype=float)
 
 rallies = []
