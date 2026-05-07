@@ -1,0 +1,32 @@
+/* Le texte de l'option sélectionnée */
+.Select-value-label, .VirtualizedSelectFocusedOption {
+    color: #e6edf3 !important;
+}
+
+/* Le fond du menu déroulant */
+.Select-menu-outer {
+    background-color: #161b22 !important;
+    border: 1px solid #30363d !important;
+}
+
+/* Les options individuelles dans la liste */
+.VirtualizedSelectOption {
+    background-color: #161b22 !important;
+    color: #e6edf3 !important;
+}
+
+/* L'option au survol de la souris */
+.VirtualizedSelectFocusedOption {
+    background-color: #1f6feb !important; /* Bleu Dash */
+    color: white !important;
+}
+
+/* Le texte que l'on tape pour chercher */
+.Select--single > .Select-control .Select-value, .Select-placeholder {
+    color: #e6edf3 !important;
+}
+
+/* Correction spécifique pour le texte grisâtre de l'input */
+.dash-dropdown .Select-control input {
+    color: #e6edf3 !important;
+}
