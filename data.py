@@ -98,13 +98,11 @@ def load_ca_prix():
     
 @lru_cache(maxsize=None)
 def prepare_valid_ca(df_ca):
-    col_nom = df_ca.columns[0]
     valid = df_ca[
         df_ca['ticker'].notna() &
-        (df_ca['ticker'] != 'None') &
+        (df_ca['ticker'].astype(str) != 'None') &  # ← astype(str) au cas où
         df_ca['Rendement_2023_2025'].notna()
     ].copy()
-    valid = valid.rename(columns={col_nom: 'Company Name'})
     return valid
 @lru_cache(maxsize=None)
 
