@@ -61,9 +61,17 @@ def plot_rendements_societe(prices_col, ticker, brent, rallies, company_name):
     ), secondary_y=True)
 
     fig.update_layout(
-        **PLOTLY_LAYOUT, height=340, showlegend=True,
+        **PLOTLY_LAYOUT, height=420,
+        showlegend=True,
         legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0),
         title=dict(text=f"{company_name} · {ticker}", font=dict(size=13)),
+        xaxis=dict(
+            rangeslider=dict(visible=True, thickness=0.05),
+            range=[
+                str(ret_daily.index[-1] - pd.DateOffset(years=1)),
+                str(ret_daily.index[-1]),
+            ],
+        ),
     )
     fig.update_yaxes(
         tickformat='.1%', title_text='Rendement',
