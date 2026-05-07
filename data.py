@@ -1,26 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 27 00:41:37 2026
-
-@author: hamidi
-"""
-
-
-"""
-data.py — Chargement et constantes
-TPI · Analyse Financière (Dash)
-"""
-
-import os
-import requests
-import pandas as pd
-from functools import lru_cache
-
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
 data.py — Chargement et constantes
 TPI · Analyse Financière (Dash)
 """
@@ -221,6 +201,26 @@ def prepare_valid_act(df_act):
     return valid
 
 
+def _normalize_quintile_col(valid, col):
+    """
+    Convertit une colonne de quintiles entiers (1–5) en labels 'Q1'–'Q5'.
+    Ne touche à rien si la colonne contient déjà des strings 'Q1'–'Q5'.
+    """
+    if col not in valid.columns:
+        return valid
+    sample = valid[col].dropna()
+    if sample.empty:
+        return valid
+    # Déjà au bon format
+    if sample.astype(str).str.match(r'^Q[1-5]$').all():
+        return valid
+    # Mapper int → 'Q{n}'
+    mapping = {1: 'Q1', 2: 'Q2', 3: 'Q3', 4: 'Q4', 5: 'Q5',
+               '1': 'Q1', '2': 'Q2', '3': 'Q3', '4': 'Q4', '5': 'Q5'}
+    valid[col] = valid[col].map(mapping)
+    return valid
+
+
 def prepare_valid_ca(df_ca):
     """Filtre CA et s'assure que Quintile_ca / ca_percentile existent."""
     df_ca = df_ca.loc[:, ~df_ca.columns.duplicated()]
@@ -235,6 +235,10 @@ def prepare_valid_ca(df_ca):
     if col_nom != 'Company name':
         valid = valid.rename(columns={col_nom: 'Company name'})
 
+    # Normaliser les quintiles entiers → 'Q1'–'Q5'
+    valid = _normalize_quintile_col(valid, 'Quintile_ca')
+
+    # Recalculer si toujours absent ou tout NaN
     valid = _add_quintiles(valid, 'Score_global_Cca', 'Quintile_ca', 'ca_percentile')
     return valid
 
@@ -253,5 +257,9 @@ def prepare_valid_cp(df_cp):
     if col_nom != 'Company Name':
         valid = valid.rename(columns={col_nom: 'Company Name'})
 
+    # Normaliser les quintiles entiers → 'Q1'–'Q5'
+    valid = _normalize_quintile_col(valid, 'Quintile_CP')
+
+    # Recalculer si toujours absent ou tout NaN
     valid = _add_quintiles(valid, 'score', 'Quintile_CP', 'score_percentile')
     return valid
