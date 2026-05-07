@@ -636,7 +636,11 @@ def debug():
     lines.append(f"CP shape : {df_cp.shape}")
     lines.append(f"CA Quintile_CA sample : {valid_ca['Quintile_CA'].dropna().head(5).tolist() if 'Quintile_CA' in valid_ca.columns else 'ABSENT'}")
     lines.append(f"CP Quintile_cp sample : {valid_cp['Quintile_cp'].dropna().head(5).tolist() if 'Quintile_cp' in valid_cp.columns else 'ABSENT'}")
+    lines.append(f"CA Score_global_CA notna : {df_ca['Score_global_CA'].notna().sum()}")
+    lines.append(f"CA Score_global_CA sample : {df_ca['Score_global_CA'].dropna().head(5).tolist()}")
+    lines.append(f"CA Quintile_CA unique brut : {df_ca['Quintile_CA'].unique().tolist()}")
 
+    
     from utils import prepare_ols_data, run_ols
     try:
         dep     = 'Rendement_2025'
