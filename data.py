@@ -96,16 +96,7 @@ def load_ca_prix():
     df.index = pd.to_datetime(df.index)
     return df
     
-@lru_cache(maxsize=None)
-def prepare_valid_ca(df_ca):
-    # Dédupliquer les colonnes
-    df_ca = df_ca.loc[:, ~df_ca.columns.duplicated()]
-    valid = df_ca[
-        df_ca['ticker'].notna() &
-        (df_ca['ticker'].astype(str) != 'None') &
-        df_ca['Rendement_2023_2025'].notna()
-    ].copy()
-    return valid
+
 @lru_cache(maxsize=None)
 
 def load_cp():
@@ -210,5 +201,15 @@ def prepare_valid_cp(df_cp):
         (df_cp['ticker'] != 'None') &
         df_cp['Rendement_2023_2025'].notna()
     ].copy()
-    valid = valid.rename(columns={col_nom: 'Company Name'})
+    valid = valid.rename(columns={col_nom: 'company name'})
+    return valid
+    
+def prepare_valid_ca(df_ca):
+    col_nom = df_ca.columns[0]
+    valid = df_ca[
+        df_ca['ticker'].notna() &
+        (df_ca['ticker'] != 'None') &
+        df_ca['Rendement_2023_2025'].notna()
+    ].copy()
+    valid = valid.rename(columns={col_nom: 'company name'})
     return valid
