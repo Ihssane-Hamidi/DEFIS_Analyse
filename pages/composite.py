@@ -5,7 +5,7 @@ TPI · Analyse Financière (Dash)
 
 import pandas as pd
 from dash import html, dcc, dash_table, Input, Output, State
-from utils import calc_metriques_brent, prepare_ols_data, sig_stars
+from utils import calc_metriques_brent, prepare_ols_data, winsorize, run_ols, sig_stars
 from data import PERIODS_LABELS
 import statsmodels.formula.api as smf
 
@@ -25,6 +25,22 @@ def layout(ctx: dict):
             ]),
         ])
 
+    periods_options = [
+        {'label': v, 'value': k}
+        for k, v in PERIODS_LABELS.items()
+    ]
+    dep_options = [
+        {'label': 'Rendement',    'value': 'Rendement'},
+        {'label': 'Volatilité',   'value': 'Volatilite'},
+        {'label': 'Sharpe',       'value': 'Sharpe'},
+        {'label': 'Max Drawdown', 'value': 'MaxDrawdown'},
+    ]
+    model_options = [
+        {'label': 'Modèle 1 · Simple (Score + Secteur)',       'value': 'simple'},
+        {'label': 'Modèle 2 · Interaction (Score × Secteur)',  'value': 'interaction'},
+        {'label': 'Modèle 3 · Fama-French (+ Taille + B/M)',   'value': 'fama_french'},
+    ]
+
     return html.Div([
         html.H2(
             'Simulateur de Score Composite Propriétaire',
@@ -32,13 +48,21 @@ def layout(ctx: dict):
                    'color': '#e6edf3', 'marginBottom': '8px'},
         ),
         html.Div(
-            className='note-box', style={'marginBottom': '20px'},
+            className='note-box', style={'marginBottom': '16px'},
             children=[
                 "Construisez votre propre score composite en pondérant les trois dimensions ACT : "
                 "Performance (I), Narrative (J) et Trend (K). "
                 "Le modèle calcule ensuite l'alpha et la résilience au choc pétrolier.",
             ],
         ),
+
+        # Note temporelle (identique à OLS)
+        html.Div(className='note-box', style={'marginBottom': '20px'}, children=[
+            "⚠ Note méthodologique : les scores TPI sont issus de l'année fiscale 2023–2024, "
+            "publiés en 2025. Les régressions sur Rendement 2023 et 2024 ont une valeur "
+            "descriptive uniquement (look-ahead bias). ",
+            html.Strong("Le Rendement 2025 constitue le test prédictif de référence."),
+        ]),
 
         # ── Pondération ───────────────────────────────────────────────────────
         html.Div('1. Pondération des variables', className='section-title'),
@@ -72,6 +96,41 @@ def layout(ctx: dict):
             id='poids-total',
             style={'fontSize': '11px', 'color': '#6e7681', 'marginBottom': '16px'},
         ),
+
+        # ── Sélecteurs régression ─────────────────────────────────────────────
+        html.Div('2. Paramètres de la régression', className='section-title'),
+        html.Div(className='row-3', style={'marginBottom': '16px'}, children=[
+            html.Div([
+                html.Div('Période', className='kpi-label'),
+                dcc.Dropdown(
+                    id='composite-period',
+                    options=periods_options,
+                    value='2025',
+                    clearable=False,
+                    style=_dd_style(),
+                ),
+            ]),
+            html.Div([
+                html.Div('Variable expliquée', className='kpi-label'),
+                dcc.Dropdown(
+                    id='composite-dep',
+                    options=dep_options,
+                    value='Rendement',
+                    clearable=False,
+                    style=_dd_style(),
+                ),
+            ]),
+            html.Div([
+                html.Div('Modèle OLS', className='kpi-label'),
+                dcc.Dropdown(
+                    id='composite-model',
+                    options=model_options,
+                    value='simple',
+                    clearable=False,
+                    style=_dd_style(),
+                ),
+            ]),
+        ]),
 
         # ── Bouton calcul ─────────────────────────────────────────────────────
         html.Button(
@@ -127,14 +186,17 @@ def register_callbacks(app, data: dict):
 
     @app.callback(
         Output('composite-results', 'children'),
-        Input('btn-composite',  'n_clicks'),
-        State('w-perf',  'value'),
-        State('w-narr',  'value'),
-        State('w-trend', 'value'),
-        State('store-dataset', 'data'),
+        Input('btn-composite',     'n_clicks'),
+        State('w-perf',            'value'),
+        State('w-narr',            'value'),
+        State('w-trend',           'value'),
+        State('composite-period',  'value'),
+        State('composite-dep',     'value'),
+        State('composite-model',   'value'),
+        State('store-dataset',     'data'),
         prevent_initial_call=True,
     )
-    def compute_composite(n_clicks, w_i, w_j, w_k, dataset):
+    def compute_composite(n_clicks, w_i, w_j, w_k, period, dep_choice, model_type, dataset):
         is_mq = (dataset != 'act')
         if is_mq:
             return html.Div(
@@ -149,6 +211,8 @@ def register_callbacks(app, data: dict):
         col_narr     = data['col_narr_act']
         col_trend    = data['col_trend_act']
         col_sect     = data['col_secteur_act']
+        quintile_col = data.get('col_quintile_act', 'Quintile_ACT')
+        total_panel  = len(data['valid_act'])
 
         w_i = w_i or 0
         w_j = w_j or 0
@@ -187,60 +251,132 @@ def register_callbacks(app, data: dict):
         rdt_b, vol_b = calc_metriques_brent(prices, tickers, rallies)
         valid['Rdt_Brent'] = valid['ticker'].map(rdt_b)
 
-        # ── Régressions ───────────────────────────────────────────────────────
-        valid2 = prepare_ols_data(valid, 'Composite_Score', col_sect)
+        # ── Régression principale (période + variable + modèle choisis) ───────
+        dep_var  = f'{dep_choice}_{period}'
+        valid2   = prepare_ols_data(valid, 'Composite_Score', col_sect)
 
-        data_glob  = valid2.dropna(subset=['Rendement_2023_2025', 'Score_std', col_sect])
-        data_brent = valid2.dropna(subset=['Rdt_Brent',           'Score_std', col_sect])
+        dep_labels = {
+            'Rendement': 'Rendement', 'Volatilite': 'Volatilité',
+            'Sharpe': 'Sharpe', 'MaxDrawdown': 'Max Drawdown',
+        }
 
-        if len(data_glob) < 10 or len(data_brent) < 10:
+        cols_needed = ['Score_std', col_sect, dep_var, 'LogMarketCap', 'BookToMarket']
+        df_reg = valid2[[c for c in cols_needed if c in valid2.columns]].dropna().copy()
+        df_reg[dep_var] = winsorize(df_reg[dep_var])
+
+        n_reg      = len(df_reg)
+        n_secteurs = df_reg[col_sect].nunique()
+
+        if n_reg < (n_secteurs + 15):
             return html.Div(
-                "Échantillon trop faible pour générer les régressions.",
+                f"Données insuffisantes pour {PERIODS_LABELS.get(period, period)} "
+                f"({n_reg} observations, {n_secteurs} secteurs). "
+                "Choisissez une période plus longue.",
                 className='warn-box',
             )
 
-        try:
-            m_glob  = smf.ols(
-                f"Rendement_2023_2025 ~ Score_std + C({col_sect})",
-                data=data_glob,
-            ).fit()
-            m_brent = smf.ols(
-                f"Rdt_Brent ~ Score_std + C({col_sect})",
-                data=data_brent,
-            ).fit()
-        except Exception as e:
-            return html.Div(f"Erreur lors du calcul : {e}", className='warn-box')
+        model = run_ols(df_reg, dep_var, col_sect, model_type)
+        if model is None:
+            return html.Div(
+                "Le calcul a échoué (instabilité numérique). Essayez le Modèle Simple.",
+                className='warn-box',
+            )
 
-        alpha_g  = m_glob.params['Score_std']
-        alpha_b  = m_brent.params['Score_std']
-        sig_g    = m_glob.pvalues['Score_std']
-        sig_b    = m_brent.pvalues['Score_std']
-        diff     = alpha_b - alpha_g
+        coef_main = model.params.get('Score_std', 0)
+        pval_main = model.pvalues.get('Score_std', 1)
 
-        # ── Metric cards ──────────────────────────────────────────────────────
-        metric_cards = html.Div(className='row-3', children=[
-            _metric_card('Alpha Global (std)',  f'{alpha_g:+.4f} {sig_stars(sig_g)}', sig_g < 0.05),
-            _metric_card('Alpha Brent (std)',   f'{alpha_b:+.4f} {sig_stars(sig_b)}', sig_b < 0.05),
-            _metric_card('Gain de Résilience',  f'{diff:+.4f}', diff > 0),
-        ])
+        # ── Régression Brent (toujours modèle simple comme référence) ─────────
+        data_brent = valid2.dropna(subset=['Rdt_Brent', 'Score_std', col_sect])
+        m_brent    = None
+        alpha_b    = None
+        sig_b      = None
 
-        # Interprétation
-        if diff > 0 and sig_b < 0.1:
-            interp = html.Div(
-                f"✓ Le score composite améliore la résilience lors des chocs pétroliers "
-                f"(Δ = {diff:+.4f}).",
+        if len(data_brent) >= 10:
+            try:
+                m_brent = smf.ols(
+                    f"Rdt_Brent ~ Score_std + C({col_sect})",
+                    data=data_brent,
+                ).fit()
+                alpha_b = m_brent.params['Score_std']
+                sig_b   = m_brent.pvalues['Score_std']
+            except Exception:
+                pass
+
+        diff = (alpha_b - coef_main) if alpha_b is not None else None
+
+        # ── Badge période ─────────────────────────────────────────────────────
+        if period == '2025':
+            period_badge = html.Div(
+                "✓ Test prédictif valide — le score était publié avant cette période.",
                 className='note-box',
-                style={'marginTop': '10px', 'borderColor': '#3fb950',
+                style={'marginTop': '8px', 'borderColor': '#3fb950',
                        'background': '#052e16', 'color': '#3fb950'},
             )
-        elif diff < 0:
-            interp = html.Div(
-                f"Le score composite est moins efficace lors des chocs pétroliers "
-                f"(Δ = {diff:+.4f}). Essayez d'augmenter le poids Trend.",
-                className='warn-box', style={'marginTop': '10px'},
+        elif period in ('2023', '2024'):
+            period_badge = html.Div(
+                "⚠ Valeur descriptive uniquement — look-ahead bias : "
+                "le score était publié après cette période.",
+                className='warn-box',
+                style={'marginTop': '8px'},
             )
         else:
-            interp = html.Div()
+            period_badge = html.Div()
+
+        # ── Metric cards ──────────────────────────────────────────────────────
+        cards_children = [
+            _metric_card(
+                f'Alpha {dep_labels.get(dep_choice, dep_choice)} (std)',
+                f'{coef_main:+.4f} {sig_stars(pval_main)}',
+                pval_main < 0.05,
+            ),
+            _metric_card('p-value', f'{pval_main:.3f}', pval_main < 0.05),
+            _metric_card('R² ajusté', f'{model.rsquared_adj:.3f}', True),
+            _metric_card('Observations', f'{int(model.nobs)} / {total_panel}', True),
+        ]
+        if alpha_b is not None and dep_choice == 'Rendement':
+            cards_children.append(
+                _metric_card('Alpha Brent (std)', f'{alpha_b:+.4f} {sig_stars(sig_b)}', sig_b < 0.05)
+            )
+        if diff is not None and dep_choice == 'Rendement':
+            cards_children.append(
+                _metric_card('Gain de Résilience', f'{diff:+.4f}', diff > 0)
+            )
+
+        metric_cards = html.Div(className='row-3', children=cards_children)
+
+        # Note contexte
+        context_note = html.Div(
+            className='note-box', style={'marginTop': '12px'},
+            children=[
+                f"Régression sur {n_reg} entreprises "
+                f"({n_reg/total_panel:.0%} du panel initial) · "
+                "OLS avec erreurs robustes HC3 · Score standardisé (Z-score) · "
+                f"Secteurs regroupés (N < 8) · "
+                f"{PERIODS_LABELS.get(period, period)} · "
+                f"{dep_labels.get(dep_choice, dep_choice)}.",
+            ],
+        )
+
+        # Interprétation résilience (uniquement si Rendement sélectionné)
+        interp = html.Div()
+        if diff is not None and dep_choice == 'Rendement':
+            if diff > 0 and sig_b < 0.1:
+                interp = html.Div(
+                    f"✓ Le score composite améliore la résilience lors des chocs pétroliers "
+                    f"(Δ = {diff:+.4f}).",
+                    className='note-box',
+                    style={'marginTop': '10px', 'borderColor': '#3fb950',
+                           'background': '#052e16', 'color': '#3fb950'},
+                )
+            elif diff < 0:
+                interp = html.Div(
+                    f"Le score composite est moins efficace lors des chocs pétroliers "
+                    f"(Δ = {diff:+.4f}). Essayez d'augmenter le poids Trend.",
+                    className='warn-box', style={'marginTop': '10px'},
+                )
+
+        # ── Tableau coefficients ───────────────────────────────────────────────
+        coef_table = _build_coef_table(model, col_sect)
 
         # ── Top 15 entreprises ────────────────────────────────────────────────
         top_df = (
@@ -257,7 +393,7 @@ def register_callbacks(app, data: dict):
         )
 
         top_table = html.Div([
-            html.Div('3. Top 15 · Meilleurs scores composites', className='section-title'),
+            html.Div('4. Top 15 · Meilleurs scores composites', className='section-title'),
             html.Div(className='card', children=[
                 dash_table.DataTable(
                     data=top_df.to_dict('records'),
@@ -320,36 +456,47 @@ def register_callbacks(app, data: dict):
         ])
 
         # ── Summaries OLS ─────────────────────────────────────────────────────
+        summary_children = [
+            html.Div([
+                html.Div(
+                    f'Régression · {dep_labels.get(dep_choice, dep_choice)} '
+                    f'· {PERIODS_LABELS.get(period, period)}',
+                    className='section-title',
+                ),
+                html.Pre(
+                    model.summary().as_text(),
+                    style={'fontSize': '10px', 'color': '#8b949e',
+                           'overflowX': 'auto', 'whiteSpace': 'pre'},
+                ),
+            ]),
+        ]
+        if m_brent is not None and dep_choice == 'Rendement':
+            summary_children.append(html.Div([
+                html.Div('Régression Période Brent-Up', className='section-title'),
+                html.Pre(
+                    m_brent.summary().as_text(),
+                    style={'fontSize': '10px', 'color': '#8b949e',
+                           'overflowX': 'auto', 'whiteSpace': 'pre'},
+                ),
+            ]))
+
         summaries = html.Details([
             html.Summary(
                 'Consulter les rapports statistiques détaillés',
                 style={'cursor': 'pointer', 'color': '#58a6ff',
                        'fontSize': '12px', 'padding': '10px 0'},
             ),
-            html.Div(className='row-2', style={'marginTop': '10px'}, children=[
-                html.Div([
-                    html.Div('Régression Période Totale', className='section-title'),
-                    html.Pre(
-                        m_glob.summary().as_text(),
-                        style={'fontSize': '10px', 'color': '#8b949e',
-                               'overflowX': 'auto', 'whiteSpace': 'pre'},
-                    ),
-                ]),
-                html.Div([
-                    html.Div('Régression Période Brent-Up', className='section-title'),
-                    html.Pre(
-                        m_brent.summary().as_text(),
-                        style={'fontSize': '10px', 'color': '#8b949e',
-                               'overflowX': 'auto', 'whiteSpace': 'pre'},
-                    ),
-                ]),
-            ]),
+            html.Div(className='row-2', style={'marginTop': '10px'},
+                     children=summary_children),
         ])
 
         return html.Div([
-            html.Div('2. Alpha & Résilience au choc pétrolier', className='section-title'),
+            html.Div('3. Alpha & Résultats de régression', className='section-title'),
             metric_cards,
+            context_note,
+            period_badge,
             interp,
+            html.Div(style={'marginTop': '14px'}, children=[coef_table]),
             html.Div(style={'marginTop': '16px'}, children=[top_table]),
             html.Div(style={'marginTop': '14px'}, children=[summaries]),
         ])
@@ -358,6 +505,78 @@ def register_callbacks(app, data: dict):
 # ══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
+def _build_coef_table(model, secteur_col):
+    """Tableau des coefficients du modèle avec p-values et étoiles."""
+    rows = []
+    for param, coef in model.params.items():
+        pval  = model.pvalues.get(param, 1)
+        stars = sig_stars(pval)
+        label = (param
+                 .replace(f'C({secteur_col})[T.', '')
+                 .replace(']', '')
+                 .replace('Score_std', 'Score (std)')
+                 .replace('Intercept', 'Constante')
+                 .replace('LogMarketCap', 'Log(MarketCap)')
+                 .replace('BookToMarket', 'Book/Market'))
+        rows.append({
+            'Paramètre': label,
+            'Coef.':     f'{coef:+.4f}',
+            'p-value':   f'{pval:.3f}',
+            'Sig.':      stars,
+        })
+
+    return html.Div([
+        html.Div('Coefficients du modèle', className='section-title'),
+        html.Div(className='card', children=[
+            dash_table.DataTable(
+                data=rows,
+                columns=[{'name': c, 'id': c} for c in rows[0].keys()] if rows else [],
+                style_table={'overflowX': 'auto', 'maxHeight': '320px',
+                             'overflowY': 'auto'},
+                style_cell={
+                    'backgroundColor': '#0d1117',
+                    'color':           '#c9d1d9',
+                    'fontSize':        '12px',
+                    'fontFamily':      'IBM Plex Mono, monospace',
+                    'border':          '0.5px solid #21262d',
+                    'padding':         '6px 14px',
+                    'textAlign':       'right',
+                },
+                style_header={
+                    'backgroundColor': '#161b22',
+                    'color':           '#6e7681',
+                    'fontSize':        '10px',
+                    'fontWeight':      '400',
+                    'textTransform':   'uppercase',
+                    'letterSpacing':   '0.07em',
+                    'border':          '0.5px solid #21262d',
+                    'textAlign':       'left',
+                },
+                style_data_conditional=[
+                    {
+                        'if': {'column_id': 'Paramètre'},
+                        'textAlign':  'left',
+                        'fontFamily': 'IBM Plex Sans, sans-serif',
+                        'color':      '#8b949e',
+                    },
+                    {
+                        'if': {'filter_query': '{Sig.} = "★★★"'},
+                        'color': '#3fb950',
+                    },
+                    {
+                        'if': {'filter_query': '{Sig.} = "★★"'},
+                        'color': '#56d364',
+                    },
+                    {
+                        'if': {'filter_query': '{Sig.} = "★"'},
+                        'color': '#d29922',
+                    },
+                ],
+            ),
+        ]),
+    ])
+
+
 def _metric_card(label, value, ok=True):
     color = '#3fb950' if ok else '#f85149'
     return html.Div(className='metric-card', children=[
@@ -377,4 +596,14 @@ def _input_style():
         'fontSize':        '13px',
         'fontFamily':      'IBM Plex Mono, monospace',
         'outline':         'none',
+    }
+
+
+def _dd_style():
+    return {
+        'backgroundColor': '#161b22',
+        'color':           '#e6edf3',
+        'border':          '0.5px solid #30363d',
+        'borderRadius':    '6px',
+        'fontSize':        '12px',
     }
