@@ -222,9 +222,7 @@ def _normalize_quintile_col(valid, col):
 
 
 def prepare_valid_ca(df_ca):
-    """Filtre CA et s'assure que Quintile_ca / ca_percentile existent."""
     df_ca = df_ca.loc[:, ~df_ca.columns.duplicated()]
-    col_nom = df_ca.columns[0]
 
     valid = df_ca[
         df_ca['ticker'].notna() &
@@ -232,21 +230,13 @@ def prepare_valid_ca(df_ca):
         df_ca['Rendement_2023_2025'].notna()
     ].copy()
 
-    if col_nom != 'Company name':
-        valid = valid.rename(columns={col_nom: 'Company name'})
-
-    # Normaliser les quintiles entiers → 'Q1'–'Q5'
-    valid = _normalize_quintile_col(valid, 'Quintile_ca')
-
-    # Recalculer si toujours absent ou tout NaN
-    valid = _add_quintiles(valid, 'Score_global_Cca', 'Quintile_ca', 'ca_percentile')
+    valid = _normalize_quintile_col(valid, 'Quintile_CA')
+    valid = _add_quintiles(valid, 'Score_global_CA', 'Quintile_CA', 'CA_percentile')
     return valid
 
 
 def prepare_valid_cp(df_cp):
-    """Filtre CP et s'assure que Quintile_CP / score_percentile existent."""
     df_cp = df_cp.loc[:, ~df_cp.columns.duplicated()]
-    col_nom = df_cp.columns[0]
 
     valid = df_cp[
         df_cp['ticker'].notna() &
@@ -254,12 +244,6 @@ def prepare_valid_cp(df_cp):
         df_cp['Rendement_2023_2025'].notna()
     ].copy()
 
-    if col_nom != 'Company Name':
-        valid = valid.rename(columns={col_nom: 'Company Name'})
-
-    # Normaliser les quintiles entiers → 'Q1'–'Q5'
-    valid = _normalize_quintile_col(valid, 'Quintile_CP')
-
-    # Recalculer si toujours absent ou tout NaN
-    valid = _add_quintiles(valid, 'score', 'Quintile_CP', 'score_percentile')
+    valid = _normalize_quintile_col(valid, 'Quintile_cp')
+    valid = _add_quintiles(valid, 'Score_global_Ccp', 'Quintile_cp', 'cp_percentile')
     return valid
