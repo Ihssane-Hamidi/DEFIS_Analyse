@@ -41,10 +41,10 @@ def plot_rendements_societe(prices_col, ticker, brent, rallies, company_name):
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig = add_oil_rectangles(fig, rallies, first_only=True)
-    fig.add_hline(y=0, line_width=0.5, line_color='rgba(255,255,255,0.15)')
+    fig.add_hline(y=0, line_width=0.5, line_color='rgba(255,255,255,0.3)')
 
     bar_col = [
-    'rgba(248,113,113,0.85)' if v < 0 else 'rgba(74,222,128,0.85)'
+    'rgba(248,113,113,1)' if v < 0 else 'rgba(74,222,128,1)'
     for v in ret_daily.values
     ]
     fig.add_trace(go.Bar(
