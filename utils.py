@@ -54,17 +54,18 @@ def detect_oil_rallies(brent, threshold=0.15, window=60):
 
 
 def add_oil_rectangles(fig, rallies, first_only=False):
-    """Ajoute les zones bleues de hausse Brent sur un graphique Plotly."""
     for i, (s, e) in enumerate(rallies):
         fig.add_vrect(
             x0=str(s), x1=str(e),
-            fillcolor='rgba(59,130,246,0.13)', line_width=0,
+            fillcolor='rgba(59,130,246,0.08)',
+            line_width=0,
+            layer='below',  # ← les rectangles passent derrière les barres
             annotation_text="↑ Brent" if (not first_only or i == 0) else "",
             annotation_position="top left",
-            annotation_font_size=9, annotation_font_color='#93c5fd',
+            annotation_font_size=9,
+            annotation_font_color='#93c5fd',
         )
     return fig
-
 
 def calc_metriques_brent(prices, tickers, rallies):
     """
