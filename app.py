@@ -176,10 +176,10 @@ col_secteur_ca  = 'Macro_Secteur'
 col_quintile_ca = 'Quintile_ca'
 col_pct_ca      = 'ca_percentile'
 
-col_score_cp    = 'Score_global_CP'
+col_score_cp    = 'Score_global_cp'
 col_secteur_cp  = 'Macro_Secteur'
-col_quintile_cp = 'Quintile_CP'
-col_pct_cp      = 'CP_percentile'
+col_quintile_cp = 'Quintile_cp'
+col_pct_cp      = 'cp_percentile'
 
 
 # ══════════════════════════════════════════════════════════════════════════════
