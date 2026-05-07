@@ -171,15 +171,17 @@ col_secteur_act = 'Secteur'
 col_narr_act    = 'Score global - Narrative Score'
 col_trend_act   = 'Score global - Trend Score'
 
-col_score_ca    = 'Score_global_Cca'
+# CA
+col_score_ca    = 'Score_global_CA'
 col_secteur_ca  = 'Macro_Secteur'
-col_quintile_ca = 'Quintile_ca'
-col_pct_ca      = 'ca_percentile'
+col_quintile_ca = 'Quintile_CA'
+col_pct_ca      = 'CA_percentile'
 
-col_score_cp    = 'score'             
-col_quintile_cp = 'Quintile_CP'      
-col_pct_cp      = 'score_percentile'  
-col_secteur_cp  = 'macro_sector' 
+# CP
+col_score_cp    = 'Score_global_Ccp'
+col_quintile_cp = 'Quintile_cp'
+col_pct_cp      = 'cp_percentile'
+col_secteur_cp  = 'Macro_Secteur' 
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -292,7 +294,7 @@ def _resolve_dataset(dataset):
             score_col=col_score_cp, secteur_col=col_secteur_cp,
             quintile_col=col_quintile_cp, pct_col=col_pct_cp,
             dataset_label='CP — Carbon Performance', badge_class='dataset-badge-cp',
-            company_col='Company Name',
+            company_col='company name',
             is_mq=False, is_act=False, is_ca=False, is_cp=True,
         )
 
