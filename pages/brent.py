@@ -353,9 +353,9 @@ def _metric_card(label, value, ok=True):
 
 def _dd_style():
     return {
-        'backgroundColor': '#161b22',
-        'color':           '#e6edf3',
-        'border':          '0.5px solid #30363d',
-        'borderRadius':    '6px',
-        'fontSize':        '12px',
+        'backgroundColor': '#000000',
+        'color': '#FFFFFF',
+        'border': '1px solid #333333',
+        'borderRadius': '6px',
+        'fontSize': '12px',
     }
