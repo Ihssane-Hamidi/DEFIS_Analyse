@@ -44,7 +44,7 @@ def plot_rendements_societe(prices_col, ticker, brent, rallies, company_name):
     fig.add_hline(y=0, line_width=0.5, line_color='rgba(255,255,255,0.15)')
 
     bar_col = [
-        'rgba(239,68,68,0.8)' if v < 0 else 'rgba(52,211,153,0.8)'
+        'rgba(239,68,68,1)' if v < 0 else 'rgba(52,211,153,1)'
         for v in ret_daily.values
     ]
     fig.add_trace(go.Bar(
