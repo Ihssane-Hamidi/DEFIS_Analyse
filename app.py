@@ -634,6 +634,8 @@ def debug():
     lines.append(f"CP Rendement_2023_2025 : {'présent' if 'Rendement_2023_2025' in df_cp.columns else 'ABSENT'}")
     lines.append(f"CA shape : {df_ca.shape}")
     lines.append(f"CP shape : {df_cp.shape}")
+    lines.append(f"CA Quintile_CA sample : {valid_ca['Quintile_CA'].dropna().head(5).tolist() if 'Quintile_CA' in valid_ca.columns else 'ABSENT'}")
+    lines.append(f"CP Quintile_cp sample : {valid_cp['Quintile_cp'].dropna().head(5).tolist() if 'Quintile_cp' in valid_cp.columns else 'ABSENT'}")
 
     from utils import prepare_ols_data, run_ols
     try:
