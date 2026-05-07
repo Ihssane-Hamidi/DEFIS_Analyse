@@ -624,6 +624,14 @@ def debug():
     lines.append(f"Colonnes ACT : {list(valid_act.columns)}")
     lines.append(f"Colonnes CA  : {list(valid_ca.columns)}")
     lines.append(f"Colonnes CP  : {list(valid_cp.columns) if not valid_cp.empty else 'vide'}")
+    lines.append(f"Colonnes CA brut : {list(df_ca.columns)}")
+    lines.append(f"Colonnes CP brut : {list(df_cp.columns)}")
+    lines.append(f"CA ticker sample : {df_ca['ticker'].dropna().head(3).tolist() if 'ticker' in df_ca.columns else 'COLONNE ABSENTE'}")
+    lines.append(f"CP ticker sample : {df_cp['ticker'].dropna().head(3).tolist() if 'ticker' in df_cp.columns else 'COLONNE ABSENTE'}")
+    lines.append(f"CA Rendement_2023_2025 : {'présent' if 'Rendement_2023_2025' in df_ca.columns else 'ABSENT'}")
+    lines.append(f"CP Rendement_2023_2025 : {'présent' if 'Rendement_2023_2025' in df_cp.columns else 'ABSENT'}")
+    lines.append(f"CA shape : {df_ca.shape}")
+    lines.append(f"CP shape : {df_cp.shape}")
 
     from utils import prepare_ols_data, run_ols
     try:
