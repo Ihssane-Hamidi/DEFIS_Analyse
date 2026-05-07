@@ -230,6 +230,9 @@ def prepare_valid_ca(df_ca):
         df_ca['Rendement_2023_2025'].notna()
     ].copy()
 
+    # Remplacer les 'nan' string par NaN réels
+    valid['Quintile_CA'] = valid['Quintile_CA'].replace('nan', pd.NA)
+
     valid = _normalize_quintile_col(valid, 'Quintile_CA')
     valid = _add_quintiles(valid, 'Score_global_CA', 'Quintile_CA', 'CA_percentile')
     return valid
