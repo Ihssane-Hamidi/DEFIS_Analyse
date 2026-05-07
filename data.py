@@ -98,9 +98,11 @@ def load_ca_prix():
     
 @lru_cache(maxsize=None)
 def prepare_valid_ca(df_ca):
+    # Dédupliquer les colonnes
+    df_ca = df_ca.loc[:, ~df_ca.columns.duplicated()]
     valid = df_ca[
         df_ca['ticker'].notna() &
-        (df_ca['ticker'].astype(str) != 'None') &  # ← astype(str) au cas où
+        (df_ca['ticker'].astype(str) != 'None') &
         df_ca['Rendement_2023_2025'].notna()
     ].copy()
     return valid
